@@ -205,6 +205,11 @@ if(USE_GRAPH_RUNTIME)
   endif(USE_GRAPH_RUNTIME_DEBUG)
 endif(USE_GRAPH_RUNTIME)
 
+if(USE_HBMC)
+  file(GLOB RUNTIME_HB_SRCS src/runtime/hbmc/*.cc)
+  list(APPEND RUNTIME_SRCS ${RUNTIME_HB_SRCS})
+endif(USE_HBMC)
+
 # Module rules
 include(cmake/modules/VTA.cmake)
 include(cmake/modules/CUDA.cmake)
