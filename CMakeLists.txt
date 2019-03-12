@@ -206,8 +206,13 @@ if(USE_GRAPH_RUNTIME)
 endif(USE_GRAPH_RUNTIME)
 
 if(USE_HBMC)
+  message(STATUS "Build with HammerBlade Manycore runtime support")
+  set(HBMC_INCLUDE_DIRS "/home/centos/bsg_f1/cl_manycore/libraries/")
+  include_directories(${HBMC_INCLUDE_DIRS})
   file(GLOB RUNTIME_HB_SRCS src/runtime/hbmc/*.cc)
   list(APPEND RUNTIME_SRCS ${RUNTIME_HB_SRCS})
+  set(HBMC_HBMC_LIBRARY "/home/centos/bsg_f1/cl_manycore/libraries/libbsg_manycore_runtime.so.1.0")
+  list(APPEND TVM_RUNTIME_LINKER_LIBS ${HBMC_HBMC_LIBRARY})
 endif(USE_HBMC)
 
 # Module rules

@@ -65,12 +65,12 @@ C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
 # - fadd runs the actual computation.
 # - asnumpy() copies the gpu array back to cpu and we can use this to verify correctness
 #
-ctx = tvm.context(tgt, 0)
-
-n = 1024
-a = tvm.nd.array(np.random.uniform(size=n).astype(A.dtype), ctx)
-b = tvm.nd.array(np.random.uniform(size=n).astype(B.dtype), ctx)
-c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
+#ctx = tvm.context(tgt, 0)
+#
+#n = 1024
+#a = tvm.nd.array(np.random.uniform(size=n).astype(A.dtype), ctx)
+#b = tvm.nd.array(np.random.uniform(size=n).astype(B.dtype), ctx)
+#c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
 # fadd(a, b, c)
 # tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())
 
