@@ -133,7 +133,8 @@ class TVMContext(ctypes.Structure):
                 ("device_id", ctypes.c_int)]
     MASK2STR = {
         1 : 'cpu',
-        2 : 'gpu',
+        #2 : 'gpu',
+        2 : 'hbmc',
         4 : 'opencl',
         5 : 'aocl',
         6 : 'sdaccel',
@@ -153,7 +154,6 @@ class TVMContext(ctypes.Structure):
         'gpu': 2,
         'cuda': 2,
         'nvptx': 2,
-        #'cuda_lite': 2,
         'cl': 4,
         'opencl': 4,
         'aocl' : 5,

@@ -17,7 +17,7 @@ import numpy as np
 
 tgt_host="llvm"
 # Change it to respective GPU if gpu is enabled Ex: cuda, opencl
-tgt="cuda"
+tgt="hbmc"
 
 ######################################################################
 # Vector Add Example
@@ -65,12 +65,12 @@ C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
 # - fadd runs the actual computation.
 # - asnumpy() copies the gpu array back to cpu and we can use this to verify correctness
 #
-#ctx = tvm.context(tgt, 0)
-#
-#n = 1024
-#a = tvm.nd.array(np.random.uniform(size=n).astype(A.dtype), ctx)
-#b = tvm.nd.array(np.random.uniform(size=n).astype(B.dtype), ctx)
-#c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
+ctx = tvm.context(tgt, 0)
+
+n = 1024
+a = tvm.nd.array(np.random.uniform(size=n).astype(A.dtype), ctx)
+b = tvm.nd.array(np.random.uniform(size=n).astype(B.dtype), ctx)
+c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
 # fadd(a, b, c)
 # tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())
 
@@ -106,18 +106,14 @@ C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
 tgt="hbmc"
 
 #fadd1 = tvm.module.load(temp.relpath("myadd.so"))
-fadd1 = tvm.module.load("/home/cyulin/Research/tvm-hb/tutorials/myadd.so")
+fadd1 = tvm.module.load("./myadd.so")
 #exit()
-if tgt == "cuda":
-    #fadd1_dev = tvm.module.load(temp.relpath("myadd.ptx"))
-    fadd1_dev = tvm.module.load("/home/cyulin/Research/tvm-hb/tutorials/myadd.ptx")
-    fadd1.import_module(fadd1_dev) 
 if tgt == "hbmc":
-    fadd1_dev = tvm.module.load("/home/cyulin/Research/tvm-hb/tutorials/main.hbmc")
+    fadd1_dev = tvm.module.load("./myadd.hbmc")
     #fadd1.import_module(fadd1_dev) 
 
-exit()
 fadd1(a, b, c)
+exit()
 tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())
 
 ######################################################################

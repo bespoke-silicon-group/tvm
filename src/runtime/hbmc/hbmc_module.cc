@@ -11,6 +11,10 @@
 #include <array>
 #include <string>
 #include <mutex>
+#include <bsg_manycore_driver.h>
+#include <bsg_manycore_mem.h>
+#include <bsg_manycore_loader.h>
+#include <bsg_manycore_print.h>
 #include "hbmc_common.h"
 #include "../pack_args.h"
 #include "../thread_storage_scope.h"
@@ -163,6 +167,7 @@ class HBMCWrappedFunc {
             const std::string& func_name,
             size_t num_void_args,
             const std::vector<std::string>& thread_axis_tags) {
+    std::cout << "Call HBMCWrappedFunc Init()\n";
     m_ = m;
     sptr_ = sptr;
     func_name_ = func_name;
@@ -173,6 +178,7 @@ class HBMCWrappedFunc {
   void operator()(TVMArgs args,
                   TVMRetValue* rv,
                   void** void_args) const {
+    std::cout << "Call HBMCWrappedFunc operator()\n";
     /*
     int device_id;
     CUDA_CALL(cudaGetDevice(&device_id));
@@ -257,6 +263,7 @@ class CUDAPrepGlobalBarrier {
 PackedFunc HBMCModuleNode::GetFunction(
       const std::string& name,
       const std::shared_ptr<ModuleNode>& sptr_to_self) {
+  std::cout << "Call HBMCModuleNode GetFunction():  " << name << std::endl;
   CHECK_EQ(sptr_to_self.get(), this);
   CHECK_NE(name, symbol::tvm_module_main)
       << "Device function do not have main";
@@ -292,6 +299,42 @@ Module HBMCModuleLoadFile(const std::string& file_name,
   LoadBinaryFromFile(file_name, &data);
   LoadMetaDataFromFile(meta_file, &fmap);
   std::cout << "Call HBMCModuleLoadFile()" << std::endl;
+
+  /*
+  uint32_t hb_mc_data = 0xABCD;
+  uint32_t DMEM_BASE = 0x1000;
+  bool write = hb_mc_copy_to_epa(fd, 0, 0, DMEM_BASE >> 2, &hb_mc_data, 1);
+
+  if (!write) {
+    printf("writing data to tile (0, 0)'s DMEM failed.\n");
+  }
+  else {
+    // read back data
+    uint32_t **buf = (uint32_t **) calloc(1, sizeof(uint32_t *));
+    bool read = hb_mc_copy_from_epa(fd, buf, 0, 0, DMEM_BASE >> 2, 1); 
+    printf("completed read.\n");
+    if (read == 1) {
+      printf("read packet: ");
+      hb_mc_print_hex((uint8_t *) buf[0]);
+    }
+    else {
+      printf("read from tile failed.\n");
+    }
+  }
+  */
+
+  /*
+  uint8_t x = 0, y = 0;
+
+  hb_mc_freeze(fd, x, y);
+  hb_mc_load_binary(fd, getenv("MAIN_LOOPBACK"), &x, &y, 1);
+  hb_mc_unfreeze(fd, x, y);
+
+  usleep(100);
+  uint32_t *received_packet = hb_mc_read_fifo(fd, 1, NULL);
+  hb_mc_print_hex((uint8_t *) received_packet);
+  */
+
   return HBMCModuleCreate(data, fmt, fmap, std::string());
 }
 
@@ -312,6 +355,7 @@ TVM_REGISTER_GLOBAL("module.loadfile_hbmc")
 .set_body([](TVMArgs args, TVMRetValue* rv) {
     *rv = HBMCModuleLoadFile(args[0], args[1]);
   });
+
 /*
 TVM_REGISTER_GLOBAL("module.loadfile_cubin")
 .set_body([](TVMArgs args, TVMRetValue* rv) {

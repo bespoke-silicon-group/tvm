@@ -41,8 +41,7 @@ class TempDirectory(object):
             self.temp_dir = None
 
     def __del__(self):
-        self
-        #self.remove()
+        self.remove()
 
     def relpath(self, name):
         """Relative path in temp dir

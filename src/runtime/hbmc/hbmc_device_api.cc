@@ -4,9 +4,10 @@
  * \brief GPU specific API
  */
 #include <tvm/runtime/device_api.h>
-
 #include <dmlc/thread_local.h>
 #include <tvm/runtime/registry.h>
+#include <bsg_manycore_driver.h>
+
 #include "hbmc_common.h"
 
 namespace tvm {
@@ -15,6 +16,14 @@ namespace runtime {
 class HBMCDeviceAPI final : public DeviceAPI {
  public:
   void SetDevice(TVMContext ctx) final {
+    std::cout << "HBMC SetDevice\n";
+    //uint8_t fd;
+    if(!hb_mc_init_host("/dev/bsg_manycore_kernel_driver", (uint8_t*)&ctx.device_id)) {
+      printf("failed to initialize host\n");
+    }
+    else {
+      printf("success to initialize host\n");
+    }
   }
   void GetAttr(TVMContext ctx, DeviceAttrKind kind, TVMRetValue* rv) final {
     if (kind == kExist) {
@@ -25,7 +34,9 @@ class HBMCDeviceAPI final : public DeviceAPI {
                        size_t nbytes,
                        size_t alignment,
                        TVMType type_hint) final {
-      return nullptr;
+    std::cout << "Call HBMC AllocDataSpace()\n";
+    void* ptr;
+    return ptr;
   }
 
   void FreeDataSpace(TVMContext ctx, void* ptr) final {
