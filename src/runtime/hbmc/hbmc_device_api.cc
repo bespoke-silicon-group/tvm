@@ -17,13 +17,6 @@ class HBMCDeviceAPI final : public DeviceAPI {
  public:
   void SetDevice(TVMContext ctx) final {
     std::cout << "HBMC SetDevice\n";
-    //uint8_t fd;
-    if(!hb_mc_init_host("/dev/bsg_manycore_kernel_driver", (uint8_t*)&ctx.device_id)) {
-      printf("failed to initialize host\n");
-    }
-    else {
-      printf("success to initialize host\n");
-    }
   }
   void GetAttr(TVMContext ctx, DeviceAttrKind kind, TVMRetValue* rv) final {
     if (kind == kExist) {

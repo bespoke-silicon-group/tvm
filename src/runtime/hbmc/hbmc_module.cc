@@ -179,6 +179,25 @@ class HBMCWrappedFunc {
                   TVMRetValue* rv,
                   void** void_args) const {
     std::cout << "Call HBMCWrappedFunc operator()\n";
+
+    uint8_t hbmc_device_id;
+    if(!hb_mc_init_host("/dev/bsg_manycore_kernel_driver", &hbmc_device_id)) {
+      printf("failed to initialize host\n");
+    }
+    else {
+      printf("success to initialize host\n");
+    }
+
+    uint8_t x = 0, y = 0;
+
+    hb_mc_freeze(hbmc_device_id, x, y);
+    hb_mc_load_binary(hbmc_device_id, getenv("MAIN_LOOPBACK"), &x, &y, 1);
+    hb_mc_unfreeze(hbmc_device_id, x, y);
+
+    usleep(100);
+    uint32_t *received_packet = hb_mc_read_fifo(hbmc_device_id, 1, NULL);
+    hb_mc_print_hex((uint8_t *) received_packet);
+
     /*
     int device_id;
     CUDA_CALL(cudaGetDevice(&device_id));
@@ -321,18 +340,6 @@ Module HBMCModuleLoadFile(const std::string& file_name,
       printf("read from tile failed.\n");
     }
   }
-  */
-
-  /*
-  uint8_t x = 0, y = 0;
-
-  hb_mc_freeze(fd, x, y);
-  hb_mc_load_binary(fd, getenv("MAIN_LOOPBACK"), &x, &y, 1);
-  hb_mc_unfreeze(fd, x, y);
-
-  usleep(100);
-  uint32_t *received_packet = hb_mc_read_fifo(fd, 1, NULL);
-  hb_mc_print_hex((uint8_t *) received_packet);
   */
 
   return HBMCModuleCreate(data, fmt, fmap, std::string());
