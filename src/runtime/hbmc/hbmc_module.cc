@@ -188,6 +188,17 @@ class HBMCWrappedFunc {
       printf("success to initialize host\n");
     }
 
+    uint32_t DMEM_BASE = 0x1000;
+    uint32_t DATA = 1234;
+
+    bool write = hb_mc_copy_to_epa(hbmc_device_id, 0, 0, DMEM_BASE>>2, &DATA, 1);
+    if(!write) {
+      printf("writing data to tile (0, 0)'s DMEM failed\n");
+    }
+    else {
+      printf("writing data to tile (0, 0)'s DMEM successed\n");
+    }
+
     uint8_t x = 0, y = 0;
 
     hb_mc_freeze(hbmc_device_id, x, y);
