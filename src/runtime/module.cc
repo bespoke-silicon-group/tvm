@@ -72,7 +72,7 @@ Module Module::LoadFromFile(const std::string& file_name,
   if (fmt == "dll" || fmt == "dylib" || fmt == "dso") {
     fmt = "so";
   }
-  if (fmt == "hbmc" ) {
+  if (fmt == "hbmc" || fmt == "riscv" ) {
     fmt = "hbmc";
     std::cout << "detect format = hbmc\n";
   }
