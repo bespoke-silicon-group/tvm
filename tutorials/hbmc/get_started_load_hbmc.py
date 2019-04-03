@@ -109,7 +109,7 @@ tgt="hbmc"
 fadd1 = tvm.module.load("./myadd.so")
 #exit()
 if tgt == "hbmc":
-    fadd1_dev = tvm.module.load("./myadd.hbmc")
+    fadd1_dev = tvm.module.load("./myadd.riscv")
     fadd1.import_module(fadd1_dev) 
 
 fadd1(a, b, c)
