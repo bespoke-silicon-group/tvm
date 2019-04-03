@@ -191,7 +191,8 @@ class HBMCWrappedFunc {
     uint32_t DMEM_BASE = 0x1000;
     uint32_t DATA = 1234;
 
-    bool write = hb_mc_copy_to_epa(hbmc_device_id, 0, 0, DMEM_BASE>>2, &DATA, 1);
+    // the y coordination: 5 will points to the DRAM on the FPGA
+    bool write = hb_mc_copy_to_epa(hbmc_device_id, 0, 5, DMEM_BASE>>2, &DATA, 1);
     if(!write) {
       printf("writing data to tile (0, 0)'s DMEM failed\n");
     }
