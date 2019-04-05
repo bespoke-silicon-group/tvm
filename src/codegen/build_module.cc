@@ -79,7 +79,7 @@ Target CreateTarget(const std::string& target_name,
   t->thread_warp_size = 1;
   if (target_name == "c" || target_name == "llvm") {
     t->keys_array.push_back(ir::StringImm::make("cpu"));
-  } else if (target_name == "cuda" || target_name == "nvptx") {
+  } else if (target_name == "cuda" || target_name == "nvptx" || target_name == "cuda_lite") {
     t->device_type = kDLGPU;
     t->keys_array.push_back(ir::StringImm::make("cuda"));
     t->keys_array.push_back(ir::StringImm::make("gpu"));
