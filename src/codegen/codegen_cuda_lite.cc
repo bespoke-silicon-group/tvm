@@ -45,14 +45,29 @@ std::string CodeGenCUDALite::Finish() {
 
 void CodeGenCUDALite::VisitStmt_(const ir::AttrStmt* op) {
   if (!cuda_lite_flag_) {
-    PrintIndent();
-    stream << "print header\n";
     cuda_lite_flag_ = true;
+    PrintIndent();
+    //stream << "print header\n";
+    stream << "for (iter_z = bsg_z; iter_z < k_BlockDim_z; iter_z += BSG_TILE_GROUP_Z_DIM){\n";
+    int out_loop_1 = BeginScope();
+    PrintIndent();
+    stream << "for (iter_y = bsg_y; iter_y < k_BlockDim_y; iter_y += BSG_TILE_GROUP_Y_DIM){\n";
+    int out_loop_2 = BeginScope();
+    PrintIndent();
+    stream << "for (iter_z = bsg_z; iter_z < k_BlockDim_z; iter_z += BSG_TILE_GROUP_Z_DIM){\n";
+    int out_loop_3 = BeginScope();
 
     CodeGenC::VisitStmt_(op);
 
+    EndScope(out_loop_3);
     PrintIndent();
-    stream << "print tail\n";
+    stream << "}\n";
+    EndScope(out_loop_2);
+    PrintIndent();
+    stream << "}\n";
+    EndScope(out_loop_1);
+    PrintIndent();
+    stream << "}\n";
     cuda_lite_flag_ = false;
   }
   else
