@@ -43,31 +43,80 @@ std::string CodeGenCUDALite::Finish() {
   return CodeGenC::Finish();
 }
 
+void CodeGenCUDALite::PrintCUDALiteKernelHead() {
+  PrintIndent();
+  stream << "const int k_gridDim_x = 1;\n";
+  PrintIndent();
+  stream << "const int k_gridDim_y = 1;\n";
+  PrintIndent();
+  stream << "const int k_gridDim_z = 1;\n";
+  PrintIndent();
+  stream << "const int k_blockDim_x = 64;\n";
+  PrintIndent();
+  stream << "const int k_blockDim_y = 1;\n";
+  PrintIndent();
+  stream << "const int k_blockDim_z = 1;\n";
+  PrintIndent();
+  stream << "const int blockIdx_x = 0;\n";
+  PrintIndent();
+  stream << "const int blockIdx_y = 0;\n";
+  PrintIndent();
+  stream << "const int blockIdx_z = 0;\n";
+  PrintIndent();
+  stream << "const int bsg_z = 0;\n";
+
+  stream << std::endl;
+  PrintIndent();
+  stream << "int id = bsg_x_y_to_id(bsg_x, bsg_y);\n\n";
+}
+
+std::vector<int> CodeGenCUDALite::PrintCUDALiteKernelLoop() {
+    std::vector<int> scope_id;
+
+  PrintIndent();
+  stream << "for (iter_z = bsg_z; iter_z < k_blockDim_z; iter_z += BSG_TILE_GROUP_Z_DIM){\n";
+  scope_id.push_back( BeginScope() );
+  PrintIndent();
+  stream << "for (iter_y = bsg_y; iter_y < k_blockDim_y; iter_y += BSG_TILE_GROUP_Y_DIM){\n";
+  scope_id.push_back( BeginScope() );
+  PrintIndent();
+  stream << "for (iter_x = bsg_x; iter_x < k_blockDim_x; iter_x += BSG_TILE_GROUP_X_DIM){\n";
+  scope_id.push_back( BeginScope() );
+
+  return scope_id;
+}
+
+void CodeGenCUDALite::PrintCUDALiteKernelLoopTail(std::vector<int> id) {
+  EndScope(id[0]);
+  PrintIndent();
+  stream << "}\n";
+  EndScope(id[1]);
+  PrintIndent();
+  stream << "}\n";
+  EndScope(id[2]);
+  PrintIndent();
+  stream << "}\n";
+}
+
+void CodeGenCUDALite::PrintCUDALiteBarrier() {
+  stream << std::endl;
+  PrintIndent();
+  stream << "bsg_tile_group_barrier(&row_barrier_inst2, &col_barrier_inst2);"
+         << std::endl;
+}
+
 void CodeGenCUDALite::VisitStmt_(const ir::AttrStmt* op) {
   if (!cuda_lite_flag_) {
     cuda_lite_flag_ = true;
-    PrintIndent();
-    //stream << "print header\n";
-    stream << "for (iter_z = bsg_z; iter_z < k_BlockDim_z; iter_z += BSG_TILE_GROUP_Z_DIM){\n";
-    int out_loop_1 = BeginScope();
-    PrintIndent();
-    stream << "for (iter_y = bsg_y; iter_y < k_BlockDim_y; iter_y += BSG_TILE_GROUP_Y_DIM){\n";
-    int out_loop_2 = BeginScope();
-    PrintIndent();
-    stream << "for (iter_z = bsg_z; iter_z < k_BlockDim_z; iter_z += BSG_TILE_GROUP_Z_DIM){\n";
-    int out_loop_3 = BeginScope();
+
+    PrintCUDALiteKernelHead();
+    std::vector<int> scope_id = PrintCUDALiteKernelLoop();
 
     CodeGenC::VisitStmt_(op);
 
-    EndScope(out_loop_3);
-    PrintIndent();
-    stream << "}\n";
-    EndScope(out_loop_2);
-    PrintIndent();
-    stream << "}\n";
-    EndScope(out_loop_1);
-    PrintIndent();
-    stream << "}\n";
+    PrintCUDALiteKernelLoopTail(scope_id);
+    PrintCUDALiteBarrier();
+
     cuda_lite_flag_ = false;
   }
   else
@@ -87,7 +136,12 @@ void CodeGenCUDALite::BindThreadIndex(const IterVar& iv) {
   CHECK(!var_idmap_.count(iv->var.get()));
   LOG(INFO) << iv->thread_tag;
   std::string tmp_thread_tag = iv->thread_tag;
+  std::string tmp_str = "iter";
   tmp_thread_tag[tmp_thread_tag.length()-2] = '_';
+  std::size_t found = tmp_thread_tag.find("threadIdx");
+  if (found!=std::string::npos)
+    tmp_thread_tag.replace(tmp_thread_tag.begin(), tmp_thread_tag.end() - 2, 
+                           tmp_str);  
   var_idmap_[iv->var.get()] =
       //CastFromTo(iv->thread_tag, UInt(32), iv->var.type());
       CastFromTo(tmp_thread_tag, UInt(32), iv->var.type());
