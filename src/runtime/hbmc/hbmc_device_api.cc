@@ -28,11 +28,16 @@ class HBMCDeviceAPI final : public DeviceAPI {
                        size_t alignment,
                        TVMType type_hint) final {
     std::cout << "Call HBMC AllocDataSpace()\n";
-    void* ptr;
+
+    eva_id_t eva_id = 0; // set eva_id to zero to make malloc func work
+
+    eva_t ptr = hb_mc_device_malloc(eva_id, nbytes);
+
     return ptr;
   }
 
   void FreeDataSpace(TVMContext ctx, void* ptr) final {
+    std::cout << "Call HBMC FreeDataSpace()\n";
   }
 
   void CopyDataFromTo(const void* from,
@@ -44,6 +49,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
                       TVMContext ctx_to,
                       TVMType type_hint,
                       TVMStreamHandle stream) final {
+    std::cout << "Call HBMC CopyDataFromTo()\n";
   }
 
   void StreamSync(TVMContext ctx, TVMStreamHandle stream) final {

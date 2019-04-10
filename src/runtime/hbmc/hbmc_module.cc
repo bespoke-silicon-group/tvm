@@ -197,9 +197,6 @@ class HBMCWrappedFunc {
     if (hb_mc_init_device(hbmc_device_id, eva_id, "/home/centos/cuda_add.riscv", &tiles[0], num_tiles) != HB_MC_SUCCESS) {
       LOG(FATAL) << "could not initialize device.";
     }  
-
-    _hb_mc_get_mem_manager_info(eva_id, &start, &size); 
-    printf("start: 0x%x, size: 0x%x\n", start, size);
    
     uint32_t size_buffer = 16; 
     eva_t A_device = hb_mc_device_malloc(eva_id, size_buffer * sizeof(uint32_t));
