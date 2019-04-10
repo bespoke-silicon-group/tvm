@@ -11,15 +11,17 @@
 #include <array>
 #include <string>
 #include <mutex>
+
 #include <bsg_manycore_driver.h>
 #include <bsg_manycore_mem.h>
 #include <bsg_manycore_loader.h>
-#include <bsg_manycore_print.h>
-#include "hbmc_common.h"
+#include <bsg_manycore_errno.h>
+
 #include "../pack_args.h"
 #include "../thread_storage_scope.h"
 #include "../meta_data.h"
 #include "../file_util.h"
+#include "hbmc_common.h"
 
 namespace tvm {
 namespace runtime {
@@ -181,13 +183,81 @@ class HBMCWrappedFunc {
     std::cout << "Call HBMCWrappedFunc operator()\n";
 
     uint8_t hbmc_device_id;
-    if(!hb_mc_init_host("/dev/bsg_manycore_kernel_driver", &hbmc_device_id)) {
-      printf("failed to initialize host\n");
-    }
-    else {
-      printf("success to initialize host\n");
+    uint32_t start, size;
+    eva_id_t eva_id = 0;
+    hb_mc_init_host(&hbmc_device_id);
+
+    tile_t tiles[1];
+    tiles[0].x = 0;
+    tiles[0].y = 1;
+    tiles[0].origin_x = 0;
+    tiles[0].origin_y = 1;
+    uint32_t num_tiles = 1;
+
+    if (hb_mc_init_device(hbmc_device_id, eva_id, "/home/centos/cuda_add.riscv", &tiles[0], num_tiles) != HB_MC_SUCCESS) {
+      LOG(FATAL) << "could not initialize device.";
+    }  
+
+    _hb_mc_get_mem_manager_info(eva_id, &start, &size); 
+    printf("start: 0x%x, size: 0x%x\n", start, size);
+   
+    uint32_t size_buffer = 16; 
+    eva_t A_device = hb_mc_device_malloc(eva_id, size_buffer * sizeof(uint32_t));
+
+    uint32_t A_host[size_buffer];
+    for (int i = 0; i < size_buffer; i++)
+      A_host[i] = i;
+
+    void *dst = (void *) A_device;
+    void *src = (void *) A_host;
+    if (hb_mc_device_memcpy(hbmc_device_id, eva_id, dst, src, size_buffer * sizeof(uint32_t), hb_mc_memcpy_to_device) != HB_MC_SUCCESS) {
+      printf("Could not copy buffer A to device.\n");
     }
 
+    hb_mc_response_packet_t C_host[size_buffer];
+    src = (void *) A_device;
+    dst = (void *) &C_host[0];
+    if (hb_mc_device_memcpy(hbmc_device_id, eva_id, dst, src, size_buffer * sizeof(uint32_t), hb_mc_memcpy_to_host)) {
+      LOG(FATAL) << "Unable to memory copy from device to host";
+    }
+
+    printf("A_host: ");
+    for (int i = 0; i < size_buffer; i++)
+      printf("%u ", A_host[i]);
+    printf("\n");
+
+    printf("C_host: ");
+    for (int i = 0; i < size_buffer; i++)
+      printf("%u ", hb_mc_response_packet_get_data(&C_host[i]));
+    printf("\n");
+
+    /*
+    uint32_t A_host[size_buffer];
+    for (int i = 0; i < size_buffer; i++) {
+      A_host[i] = i;
+    }
+
+    void *dst = (void *) A_device;
+    void *src = (void *) &A_host[0];
+    int error = hb_mc_device_memcpy (hbmc_device_id, eva_id, dst, src, size_buffer * sizeof(uint32_t), hb_mc_memcpy_to_device);
+    if (error != HB_MC_SUCCESS) {
+      printf("could not copy buffer A to device.\n");
+    }
+
+    request_packet_t A_loads[size_buffer];
+    src = (void *) A_device;
+    dst = (void *) &A_loads[0];
+    error = hb_mc_device_memcpy(hbmc_device_id, eva_id, (void *)dst, src, size_buffer * sizeof(uint32_t),
+                              hb_mc_memcpy_to_host);
+    if (error != HB_MC_SUCCESS)
+      printf("Unable to copy A from device\n");
+
+    for (int i = 0; i < size_buffer; i++) {
+      printf("%u\n", A_loads[i].data);
+    }
+    */
+    
+    /*
     uint32_t DMEM_BASE = 0x1000;
     uint32_t DATA = 1234;
 
@@ -209,42 +279,6 @@ class HBMCWrappedFunc {
     usleep(100);
     uint32_t *received_packet = hb_mc_read_fifo(hbmc_device_id, 1, NULL);
     hb_mc_print_hex((uint8_t *) received_packet);
-
-    /*
-    int device_id;
-    CUDA_CALL(cudaGetDevice(&device_id));
-    if (fcache_[device_id] == nullptr) {
-      fcache_[device_id] = m_->GetFunc(device_id, func_name_);
-    }
-    CUstream strm = static_cast<CUstream>(CUDAThreadEntry::ThreadLocal()->stream);
-    ThreadWorkLoad wl = thread_axis_cfg_.Extract(args);
-    CUresult result = cuLaunchKernel(
-        fcache_[device_id],
-        wl.grid_dim(0),
-        wl.grid_dim(1),
-        wl.grid_dim(2),
-        wl.block_dim(0),
-        wl.block_dim(1),
-        wl.block_dim(2),
-        0, strm, void_args, 0);
-    if (result != CUDA_SUCCESS && result != CUDA_ERROR_DEINITIALIZED) {
-      const char *msg;
-      cuGetErrorName(result, &msg);
-      std::ostringstream os;
-      os << "CUDALaunch Error: " << msg << "\n"
-         << " grid=(" << wl.grid_dim(0) << ","
-         << wl.grid_dim(1) << "," << wl.grid_dim(2) << "), "
-         << " block=(" << wl.block_dim(0) << ","
-         << wl.block_dim(1) << "," << wl.block_dim(2) << ")\n";
-      std::string cuda = m_->GetSource("");
-      if (cuda.length() != 0) {
-        os << "// func_name=" << func_name_ << "\n"
-           << "// CUDA Source\n"
-           << "// -----------\n"
-           << cuda;
-      }
-      LOG(FATAL) << os.str();
-    }
     */
   }
 
@@ -330,29 +364,6 @@ Module HBMCModuleLoadFile(const std::string& file_name,
   LoadBinaryFromFile(file_name, &data);
   LoadMetaDataFromFile(meta_file, &fmap);
   std::cout << "Call HBMCModuleLoadFile()" << std::endl;
-
-  /*
-  uint32_t hb_mc_data = 0xABCD;
-  uint32_t DMEM_BASE = 0x1000;
-  bool write = hb_mc_copy_to_epa(fd, 0, 0, DMEM_BASE >> 2, &hb_mc_data, 1);
-
-  if (!write) {
-    printf("writing data to tile (0, 0)'s DMEM failed.\n");
-  }
-  else {
-    // read back data
-    uint32_t **buf = (uint32_t **) calloc(1, sizeof(uint32_t *));
-    bool read = hb_mc_copy_from_epa(fd, buf, 0, 0, DMEM_BASE >> 2, 1); 
-    printf("completed read.\n");
-    if (read == 1) {
-      printf("read packet: ");
-      hb_mc_print_hex((uint8_t *) buf[0]);
-    }
-    else {
-      printf("read from tile failed.\n");
-    }
-  }
-  */
 
   return HBMCModuleCreate(data, fmt, fmap, std::string());
 }
