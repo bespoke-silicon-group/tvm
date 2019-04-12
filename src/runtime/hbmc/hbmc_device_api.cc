@@ -16,7 +16,22 @@ namespace runtime {
 class HBMCDeviceAPI final : public DeviceAPI {
  public:
   void SetDevice(TVMContext ctx) final {
-    std::cout << "HBMC SetDevice\n";
+    LOG(INFO) << "Call HBMCDeviceAPI::SetDevice()";
+
+    hb_mc_init_host((uint8_t*)&(ctx.device_id));
+
+    tile_t tiles[1];
+    tiles[0].x = 0;
+    tiles[0].y = 1;
+    tiles[0].origin_x = 0;
+    tiles[0].origin_y = 1;
+    uint32_t num_tiles = 1;
+    eva_id_t eva_id = 0;
+
+    if (hb_mc_init_device(ctx.device_id, eva_id, "/home/centos/cuda_add.riscv", 
+                          &tiles[0], num_tiles) != HB_MC_SUCCESS) {
+      LOG(FATAL) << "could not initialize device.";
+    }  
   }
   void GetAttr(TVMContext ctx, DeviceAttrKind kind, TVMRetValue* rv) final {
     if (kind == kExist) {
@@ -28,16 +43,20 @@ class HBMCDeviceAPI final : public DeviceAPI {
                        size_t alignment,
                        TVMType type_hint) final {
     std::cout << "Call HBMC AllocDataSpace()\n";
+    HBMCDeviceAPI::SetDevice(ctx);
 
     eva_id_t eva_id = 0; // set eva_id to zero to make malloc func work
 
     eva_t ptr = hb_mc_device_malloc(eva_id, nbytes);
 
-    return ptr;
+    return static_cast<void *>(&ptr);
   }
 
   void FreeDataSpace(TVMContext ctx, void* ptr) final {
     std::cout << "Call HBMC FreeDataSpace()\n";
+
+    eva_id_t eva_id = 0; // set eva_id to zero to make malloc func work
+    hb_mc_device_free(eva_id, static_cast<uint32_t>(reinterpret_cast<std::uintptr_t>(ptr)));
   }
 
   void CopyDataFromTo(const void* from,
@@ -50,6 +69,13 @@ class HBMCDeviceAPI final : public DeviceAPI {
                       TVMType type_hint,
                       TVMStreamHandle stream) final {
     std::cout << "Call HBMC CopyDataFromTo()\n";
+
+    std::cout << "ctx_from: " << ctx_from.device_id << std::endl;
+    std::cout << "ctx_to: " << ctx_to.device_id << std::endl;
+
+    //if (hb_mc_device_memcpy(hbmc_device_id, eva_id, dst, src, size_buffer * sizeof(uint32_t), hb_mc_memcpy_to_device) != HB_MC_SUCCESS) {
+      //printf("Could not copy buffer A to device.\n");
+    //}
   }
 
   void StreamSync(TVMContext ctx, TVMStreamHandle stream) final {

@@ -81,6 +81,7 @@ struct NDArray::Internal {
   static NDArray Create(std::vector<int64_t> shape,
                         DLDataType dtype,
                         DLContext ctx) {
+    LOG(INFO) << "Call NDArray::Create";
     VerifyDataType(dtype);
     // critical zone
     NDArray::Container* data = new NDArray::Container();
@@ -143,10 +144,12 @@ DLManagedTensor* NDArray::ToDLPack() const {
 NDArray NDArray::Empty(std::vector<int64_t> shape,
                        DLDataType dtype,
                        DLContext ctx) {
-  std::cout << "Call NDArray::Empty()\n";
+  std::cout << "Call NDArray::Empty() in runtime/ndarray.cc\n";
   NDArray ret = Internal::Create(shape, dtype, ctx);
   std::cout << "After Internal::Create(shape, dtype, ctx)\n";
   // setup memory content
+  //if (ctx.device_type == kDLHBMC) 
+    //DeviceAPI::Get(ret->ctx)->SetDevice(ret->ctx);
   size_t size = GetDataSize(ret.data_->dl_tensor);
   size_t alignment = GetDataAlignment(ret.data_->dl_tensor);
   ret.data_->dl_tensor.data =
@@ -179,6 +182,8 @@ void NDArray::CopyFromTo(DLTensor* from,
   // Use the context that is *not* a cpu context to get the correct device
   // api manager.
   TVMContext ctx = from->ctx.device_type != kDLCPU ? from->ctx : to->ctx;
+  std::cout << "NDArray, from->ctx.device_id " << from->ctx.device_id << std::endl;
+  std::cout << "NDArray, tp->ctx.device_id " << to->ctx.device_id << std::endl;
 
   DeviceAPI::Get(ctx)->CopyDataFromTo(
     from->data, static_cast<size_t>(from->byte_offset),
