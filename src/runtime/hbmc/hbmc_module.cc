@@ -182,18 +182,23 @@ class HBMCWrappedFunc {
                   void** void_args) const {
     std::cout << "Call HBMCWrappedFunc operator()\n";
 
+    /*
     uint8_t hbmc_device_id;
     uint32_t start, size;
     eva_id_t eva_id = 0;
     hb_mc_init_host(&hbmc_device_id);
+    */
 
+    /*
     tile_t tiles[1];
     tiles[0].x = 0;
     tiles[0].y = 1;
     tiles[0].origin_x = 0;
     tiles[0].origin_y = 1;
     uint32_t num_tiles = 1;
+    */
 
+    /*
     if (hb_mc_init_device(hbmc_device_id, eva_id, "/home/centos/cuda_add.riscv", &tiles[0], num_tiles) != HB_MC_SUCCESS) {
       LOG(FATAL) << "could not initialize device.";
     }  
@@ -227,6 +232,7 @@ class HBMCWrappedFunc {
     for (int i = 0; i < size_buffer; i++)
       printf("%u ", hb_mc_response_packet_get_data(&C_host[i]));
     printf("\n");
+    */
 
     /*
     uint32_t A_host[size_buffer];
