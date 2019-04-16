@@ -183,58 +183,6 @@ class HBMCWrappedFunc {
     std::cout << "Call HBMCWrappedFunc operator()\n";
 
     /*
-    uint8_t hbmc_device_id;
-    uint32_t start, size;
-    eva_id_t eva_id = 0;
-    hb_mc_init_host(&hbmc_device_id);
-    */
-
-    /*
-    tile_t tiles[1];
-    tiles[0].x = 0;
-    tiles[0].y = 1;
-    tiles[0].origin_x = 0;
-    tiles[0].origin_y = 1;
-    uint32_t num_tiles = 1;
-    */
-
-    /*
-    if (hb_mc_init_device(hbmc_device_id, eva_id, "/home/centos/cuda_add.riscv", &tiles[0], num_tiles) != HB_MC_SUCCESS) {
-      LOG(FATAL) << "could not initialize device.";
-    }  
-   
-    uint32_t size_buffer = 16; 
-    eva_t A_device = hb_mc_device_malloc(eva_id, size_buffer * sizeof(uint32_t));
-
-    uint32_t A_host[size_buffer];
-    for (int i = 0; i < size_buffer; i++)
-      A_host[i] = i;
-
-    void *dst = (void *) A_device;
-    void *src = (void *) A_host;
-    if (hb_mc_device_memcpy(hbmc_device_id, eva_id, dst, src, size_buffer * sizeof(uint32_t), hb_mc_memcpy_to_device) != HB_MC_SUCCESS) {
-      printf("Could not copy buffer A to device.\n");
-    }
-
-    hb_mc_response_packet_t C_host[size_buffer];
-    src = (void *) A_device;
-    dst = (void *) &C_host[0];
-    if (hb_mc_device_memcpy(hbmc_device_id, eva_id, dst, src, size_buffer * sizeof(uint32_t), hb_mc_memcpy_to_host)) {
-      LOG(FATAL) << "Unable to memory copy from device to host";
-    }
-
-    printf("A_host: ");
-    for (int i = 0; i < size_buffer; i++)
-      printf("%u ", A_host[i]);
-    printf("\n");
-
-    printf("C_host: ");
-    for (int i = 0; i < size_buffer; i++)
-      printf("%u ", hb_mc_response_packet_get_data(&C_host[i]));
-    printf("\n");
-    */
-
-    /*
     uint32_t A_host[size_buffer];
     for (int i = 0; i < size_buffer; i++) {
       A_host[i] = i;

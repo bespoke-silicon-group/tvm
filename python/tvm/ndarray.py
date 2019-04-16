@@ -70,7 +70,8 @@ def gpu(dev_id=0):
     ctx : TVMContext
         The created context
     """
-    return TVMContext(2, dev_id)
+    #return TVMContext(2, dev_id)
+    return TVMContext(13, dev_id)
 
 def rocm(dev_id=0):
     """Construct a ROCM device
@@ -187,6 +188,9 @@ def ext_dev(dev_id=0):
     device by plugin device API as ext_dev.
     """
     return TVMContext(12, dev_id)
+
+def hbmc(dev_id=0):
+    return TVMContext(2, dev_id)
 
 
 cl = opencl

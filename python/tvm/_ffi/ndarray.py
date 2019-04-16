@@ -80,6 +80,7 @@ def context(dev_type, dev_id=0):
         if dev_type not in TVMContext.STR2MASK:
             raise ValueError("Unknown device type %s" % dev_type)
         dev_type = TVMContext.STR2MASK[dev_type]
+        #print("dev_type after context: " + str(dev_type))
     return TVMContext(dev_type, dev_id)
 
 
@@ -119,6 +120,8 @@ def empty(shape, dtype="float32", ctx=context(1, 0)):
     arr : tvm.nd.NDArray
         The array tvm supported.
     """
+    print("ndarray.py empy() ctx.device_type = " + str(ctx.device_type))
+    print("ndarray.py empy() ctx.device_id = " + str(ctx.device_id))
     shape = c_array(tvm_shape_index_t, shape)
     ndim = ctypes.c_int(len(shape))
     handle = TVMArrayHandle()

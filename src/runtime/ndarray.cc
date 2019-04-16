@@ -81,7 +81,11 @@ struct NDArray::Internal {
   static NDArray Create(std::vector<int64_t> shape,
                         DLDataType dtype,
                         DLContext ctx) {
-    LOG(INFO) << "Call NDArray::Create";
+    std::cout << "Call NDArray::Create" << std::endl;
+    std::cout << "NDArray::Create(): ";
+    std::cout << "ctx.(device_type, device_id) = (" << ctx.device_type;
+    std::cout << ", " << ctx.device_id << ")" << std::endl;
+
     VerifyDataType(dtype);
     // critical zone
     NDArray::Container* data = new NDArray::Container();
@@ -146,10 +150,11 @@ NDArray NDArray::Empty(std::vector<int64_t> shape,
                        DLContext ctx) {
   std::cout << "Call NDArray::Empty() in runtime/ndarray.cc\n";
   NDArray ret = Internal::Create(shape, dtype, ctx);
-  std::cout << "After Internal::Create(shape, dtype, ctx)\n";
-  // setup memory content
-  //if (ctx.device_type == kDLHBMC) 
-    //DeviceAPI::Get(ret->ctx)->SetDevice(ret->ctx);
+
+  std::cout << "NDArray::Empty(): " << std::endl;
+  std::cout << "ret->ctx.(device_type, device_id) = (" << ret->ctx.device_type;
+  std::cout << ", " << ret->ctx.device_id << ")" << std::endl;
+
   size_t size = GetDataSize(ret.data_->dl_tensor);
   size_t alignment = GetDataAlignment(ret.data_->dl_tensor);
   ret.data_->dl_tensor.data =
@@ -218,6 +223,11 @@ int TVMArrayAlloc(const tvm_index_t* shape,
   DLContext ctx;
   ctx.device_type = static_cast<DLDeviceType>(device_type);
   ctx.device_id = device_id;
+
+  std::cout << "TVMArrayAlloc: ";
+  std::cout << "ctx.device_type: " << ctx.device_type << " ";
+  std::cout << "ctx.device_id: " << ctx.device_id << std::endl;
+
   *out = NDArray::Internal::MoveAsDLTensor(
       NDArray::Empty(std::vector<int64_t>(shape, shape + ndim), dtype, ctx));
   API_END();
@@ -265,10 +275,16 @@ int TVMArrayCopyFromBytes(TVMArrayHandle handle,
   size_t arr_size = GetDataSize(*handle);
   CHECK_EQ(arr_size, nbytes)
       << "TVMArrayCopyFromBytes: size mismatch";
+
+  std::cout << "NDArray::TVMArrayCopyFromBytes(): ";
+  std::cout << "handle->ctx.(device_type, device_id) = (" << handle->ctx.device_type;
+  std::cout << ", " << handle->ctx.device_id << ")" << std::endl;
+
   DeviceAPI::Get(handle->ctx)->CopyDataFromTo(
       data, 0,
       handle->data, static_cast<size_t>(handle->byte_offset),
       nbytes, cpu_ctx, handle->ctx, handle->dtype, nullptr);
+
   API_END();
 }
 

@@ -45,8 +45,8 @@ tgt="hbmc"
 # the computation should be done.
 #
 n = tvm.var("n")
-A = tvm.placeholder((n,), dtype='uint', name='A')
-B = tvm.placeholder((n,), dtype='uint', name='B')
+A = tvm.placeholder((n,), dtype='int', name='A')
+B = tvm.placeholder((n,), dtype='int', name='B')
 C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
 # print(type(C))
 
@@ -67,14 +67,12 @@ C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
 #
 ctx = tvm.context(tgt, 0)
 
-#n = 1024
-n = 64
-print(A.dtype)
-print(C.dtype)
+n = 1024
 a = tvm.nd.array(np.random.uniform(low=0, high=10, size=n).astype(A.dtype), ctx)
-exit()
+print(a)
 b = tvm.nd.array(np.random.uniform(low=0, high=10, size=n).astype(B.dtype), ctx)
 c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
+#exit()
 # fadd(a, b, c)
 # tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())
 
@@ -110,7 +108,7 @@ c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
 tgt="hbmc"
 
 #fadd1 = tvm.module.load(temp.relpath("myadd.so"))
-fadd1 = tvm.module.load("./myadd.so")
+fadd1 = tvm.module.load("./myadd_int.so")
 #exit()
 if tgt == "hbmc":
     fadd1_dev = tvm.module.load("./myadd.riscv")

@@ -15,24 +15,32 @@ namespace runtime {
 
 class HBMCDeviceAPI final : public DeviceAPI {
  public:
+  HBMCDeviceAPI() {
+    init_flag = false;
+  }
   void SetDevice(TVMContext ctx) final {
-    LOG(INFO) << "Call HBMCDeviceAPI::SetDevice()";
+    std::cout << "Call HBMCDeviceAPI::SetDevice()";
 
-    hb_mc_init_host((uint8_t*)&(ctx.device_id));
-    LOG(INFO) << "ctx.device_id: " << ctx.device_id;
+    if (init_flag == false) {
+      std::cout << "Initializing HBMC host...\n";
+      hb_mc_init_host((uint8_t*)&(ctx.device_id));
+      LOG(INFO) << "ctx.device_id: " << ctx.device_id;
 
-    tile_t tiles[1];
-    tiles[0].x = 0;
-    tiles[0].y = 1;
-    tiles[0].origin_x = 0;
-    tiles[0].origin_y = 1;
-    uint32_t num_tiles = 1;
-    eva_id_t eva_id = 0;
+      tile_t tiles[1];
+      tiles[0].x = 0;
+      tiles[0].y = 1;
+      tiles[0].origin_x = 0;
+      tiles[0].origin_y = 1;
+      uint32_t num_tiles = 1;
+      eva_id_t eva_id = 0;
 
-    if (hb_mc_init_device(ctx.device_id, eva_id, "/home/centos/cuda_add.riscv", 
-                          &tiles[0], num_tiles) != HB_MC_SUCCESS) {
-      LOG(FATAL) << "could not initialize device.";
-    }  
+      std::cout << "Initializing HBMC device...\n";
+      if (hb_mc_init_device(ctx.device_id, eva_id, "/home/centos/cuda_add2.riscv", 
+                            &tiles[0], num_tiles) != HB_MC_SUCCESS)
+        LOG(FATAL) << "could not initialize device.";
+
+      init_flag = true;
+    }
   }
   void GetAttr(TVMContext ctx, DeviceAttrKind kind, TVMRetValue* rv) final {
     if (kind == kExist) {
@@ -46,9 +54,14 @@ class HBMCDeviceAPI final : public DeviceAPI {
     std::cout << "Call HBMC AllocDataSpace()\n";
     HBMCDeviceAPI::SetDevice(ctx);
 
+    std::cout << "HBMCDeviceAPI::AllocDataSpace(): ";
+    std::cout << "ctx.(device_type, device_id) = (" << ctx.device_type;
+    std::cout << ", " << ctx.device_id << ")" << std::endl;
+
     eva_id_t eva_id = 0; // set eva_id to zero to make malloc func work
 
-    eva_t ptr = hb_mc_device_malloc(eva_id, nbytes);
+    eva_t ptr;
+    hb_mc_device_malloc(eva_id, nbytes, &ptr);
     printf("malloc addr: 0x%x\n", ptr);
 
     return (void*) ptr;
@@ -75,41 +88,35 @@ class HBMCDeviceAPI final : public DeviceAPI {
     std::cout << "Call HBMC CopyDataFromTo()\n";
 
     std::cout << "size: " << size << std::endl;
-    std::cout << "ctx_from.device_id: " << ctx_from.device_id 
-              << ", ctx_from.device_type: " << ctx_from.device_id << std::endl;
-    std::cout << "ctx_to.device_id: " << ctx_to.device_id 
-              << ", ctx_to.device_type: " << ctx_to.device_id << std::endl;
 
-    eva_id_t eva_id = 0; // set eva_id to zero to make malloc func work
-    printf("memcpy addr: 0x%x\n", reinterpret_cast<uint32_t*>(to));
+    std::cout << "HBMCDeviceAPI::CopyFromBytes(): \n";
+    std::cout << "ctx_from.(device_type, device_id) = (" << ctx_from.device_type;
+    std::cout << ", " << ctx_from.device_id << ")" << std::endl;
+    std::cout << "ctx_to.(device_type, device_id) = (" << ctx_to.device_type;
+    std::cout << ", " << ctx_to.device_id << ")" << std::endl;
 
-    if (hb_mc_device_memcpy(ctx_to.device_id, eva_id, to, from, 
-                            size, hb_mc_memcpy_to_device) != HB_MC_SUCCESS) {
-      printf("Could not copy buffer A to device.\n");
+    if (ctx_from.device_type == kDLCPU) {
+      printf("from addr: 0x%x\n", 
+              reinterpret_cast<uint64_t*>((void*) from));
+      printf("to addr: 0x%x\n", reinterpret_cast<uint32_t*>(to));
+      if (hb_mc_device_memcpy(ctx_to.device_id, (eva_id_t) 0, to, 
+          from, size, hb_mc_memcpy_to_device) != HB_MC_SUCCESS)
+        LOG(FATAL) << "Unable to memcpy from host to hbmc device.";
+
+      int32_t *arr = static_cast<int32_t*>((void*)from);
+      printf("from[0:8]: ");
+      for (int i = 0; i < 8; i++)
+        printf("%d ", arr[i]); 
+      printf("\n");
     }
-    
-    /***** test whether the hb_mc_device_memcpy() is correct *****/
-    /*
-    hb_mc_response_packet_t* buf = new hb_mc_response_packet_t[size/sizeof(uint32_t)];
-    void* dst = (void *) buf;
-    if (hb_mc_device_memcpy(ctx_to.device_id, eva_id, dst, to, size, 
-                            hb_mc_memcpy_to_host)) {
-      LOG(FATAL) << "Unable to memory copy from device to host";
+    else {
+      printf("from addr: 0x%x\n", 
+              reinterpret_cast<uint32_t*>((void*)from));
+      printf("to addr: 0x%x\n", reinterpret_cast<uint64_t*>(to));
+      if (hb_mc_device_memcpy(ctx_to.device_id, (eva_id_t) 0, to, 
+          from, size, hb_mc_memcpy_to_host) != HB_MC_SUCCESS)
+        LOG(FATAL) << "Could not do memory copy from host to hbmc device.";
     }
-
-    uint32_t *arr = static_cast<uint32_t*>((void*)from);
-    printf("from[0:8]: ");
-    for (int i = 0; i < 8; i++)
-      printf("%u ", arr[i]); 
-    printf("\n");
-    
-    printf("buf[0:8]: ");
-    for (int i = 0; i < 8; i++) {
-      printf("%u ", hb_mc_response_packet_get_data(&buf[i]));
-    }
-    printf("\n");
-    */
-
   }
 
   void StreamSync(TVMContext ctx, TVMStreamHandle stream) final {
@@ -129,7 +136,8 @@ class HBMCDeviceAPI final : public DeviceAPI {
     return inst;
   }
 
- //private:
+  private:
+    bool init_flag;
   /*
   static void GPUCopy(const void* from,
                       void* to,
