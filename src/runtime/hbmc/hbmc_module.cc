@@ -181,56 +181,43 @@ class HBMCWrappedFunc {
                   TVMRetValue* rv,
                   void** void_args) const {
     std::cout << "Call HBMCWrappedFunc operator()\n";
+    LOG(INFO) << "args.num_args = " << args.num_args;
 
-    /*
-    uint32_t A_host[size_buffer];
-    for (int i = 0; i < size_buffer; i++) {
-      A_host[i] = i;
+    for (int i=0; i < args.num_args; i++) {
+        LOG(INFO) << TypeCode2Str(args.type_codes[i]);
+        if (args.type_codes[i] == kHandle) {
+            uint64_t handle = reinterpret_cast<uint64_t>
+                              (args.values[i].v_handle);
+            LOG(INFO) << "kHandle: " << std::hex << handle;
+        }
+        else if (args.type_codes[i] == kDLInt) {
+            int64_t handle = reinterpret_cast<int64_t>
+                             (args.values[i].v_int64);
+                             //(args.values[i].v_handle);
+            LOG(INFO) << "kDLInt " << handle;
+        }
     }
 
-    void *dst = (void *) A_device;
-    void *src = (void *) &A_host[0];
-    int error = hb_mc_device_memcpy (hbmc_device_id, eva_id, dst, src, size_buffer * sizeof(uint32_t), hb_mc_memcpy_to_device);
-    if (error != HB_MC_SUCCESS) {
-      printf("could not copy buffer A to device.\n");
-    }
+    printf("void_args[0] = 0x%x\n", *(uint32_t*)void_args[0]);
+    printf("void_args[1] = 0x%x\n", *(uint32_t*)void_args[1]);
+    printf("void_args[2] = 0x%x\n", *(uint32_t*)void_args[2]);
+    printf("void_args[2] = %d\n", *(int32_t*)void_args[3]);
 
-    request_packet_t A_loads[size_buffer];
-    src = (void *) A_device;
-    dst = (void *) &A_loads[0];
-    error = hb_mc_device_memcpy(hbmc_device_id, eva_id, (void *)dst, src, size_buffer * sizeof(uint32_t),
-                              hb_mc_memcpy_to_host);
-    if (error != HB_MC_SUCCESS)
-      printf("Unable to copy A from device\n");
+    LOG(INFO) << "func_name_ = " << func_name_;
+    char *local_f_name = new char [func_name_.length()+1];
+    strcpy(local_f_name, func_name_.c_str());
 
-    for (int i = 0; i < size_buffer; i++) {
-      printf("%u\n", A_loads[i].data);
-    }
-    */
-    
-    /*
-    uint32_t DMEM_BASE = 0x1000;
-    uint32_t DATA = 1234;
+    tile_t tiles[1];
+    tiles[0].x = 0;
+    tiles[0].y = 1;
+    tiles[0].origin_x = 0;
+    tiles[0].origin_y = 1;
+    uint32_t num_tiles = 1;
 
-    // the y coordination: 5 will points to the DRAM on the FPGA
-    bool write = hb_mc_copy_to_epa(hbmc_device_id, 0, 5, DMEM_BASE>>2, &DATA, 1);
-    if(!write) {
-      printf("writing data to tile (0, 0)'s DMEM failed\n");
-    }
-    else {
-      printf("writing data to tile (0, 0)'s DMEM successed\n");
-    }
-
-    uint8_t x = 0, y = 0;
-
-    hb_mc_freeze(hbmc_device_id, x, y);
-    hb_mc_load_binary(hbmc_device_id, getenv("MAIN_LOOPBACK"), &x, &y, 1);
-    hb_mc_unfreeze(hbmc_device_id, x, y);
-
-    usleep(100);
-    uint32_t *received_packet = hb_mc_read_fifo(hbmc_device_id, 1, NULL);
-    hb_mc_print_hex((uint8_t *) received_packet);
-    */
+    uint32_t argv[4] = {*(uint32_t*)void_args[1], *(uint32_t*)void_args[2], *(uint32_t*)void_args[0], *(uint32_t*)void_args[3]};
+    char *elf_path = "/home/centos/tvm-hb/tutorials/hbmc/myadd.riscv";
+    int error = hb_mc_device_launch(0, 0, local_f_name, 4, argv, elf_path, tiles, num_tiles); /* launch the kernel */
+    hb_mc_cuda_sync(0, &tiles[0]); /* if CUDA sync is correct, this program won't hang here. */
   }
 
  private:

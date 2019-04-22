@@ -67,12 +67,12 @@ C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
 #
 ctx = tvm.context(tgt, 0)
 
-n = 1024
+n = 16
 a = tvm.nd.array(np.random.uniform(low=0, high=10, size=n).astype(A.dtype), ctx)
-print(a)
 b = tvm.nd.array(np.random.uniform(low=0, high=10, size=n).astype(B.dtype), ctx)
+print(a)
+print(b)
 c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
-#exit()
 # fadd(a, b, c)
 # tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())
 
@@ -115,6 +115,9 @@ if tgt == "hbmc":
     fadd1.import_module(fadd1_dev) 
 
 fadd1(a, b, c)
+print(a.asnumpy())
+print(b.asnumpy())
+print(c.asnumpy())
 exit()
 tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())
 
