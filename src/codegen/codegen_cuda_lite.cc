@@ -14,7 +14,7 @@ namespace tvm {
 namespace codegen {
 
 CodeGenCUDALite::CodeGenCUDALite() {
-  restrict_keyword_ = "__restrict__";
+  //restrict_keyword_ = "__restrict__";
 }
 
 void CodeGenCUDALite::Init(bool output_ssa) {
@@ -31,7 +31,10 @@ void CodeGenCUDALite::AddFunction(LoweredFunc f) {
 }
 
 std::string CodeGenCUDALite::Finish() {
-  decl_stream << "#include \"manycore_hearder.h\"\n";
+  decl_stream << "#include \"bsg_manycore.h\"\n";
+  decl_stream << "#include \"bsg_set_tile_x_y.h\"\n";
+  decl_stream << "#include \"bsg_tile_group_barrier.h\"\n";
+
   if (enable_fp16_) {
     decl_stream << "#include <cuda_fp16.h>\n";
   }
