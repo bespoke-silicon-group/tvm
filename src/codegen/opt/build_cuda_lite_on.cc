@@ -13,6 +13,7 @@
 
 #include "../codegen_cuda_lite.h"
 #include "../build_common.h"
+#include "../../runtime/file_util.h"
 
 namespace tvm {
 namespace codegen {
@@ -27,6 +28,30 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
     cg.AddFunction(f);
   }
   std::string code = cg.Finish();
+
+  if (const auto* f = Registry::Get("tvm_callback_cuda_lite_postproc")) {
+    code = (*f)(code).operator std::string();
+  }
+
+  std::string file_name_prefix = "cuda_lite_kernel";
+  runtime::SaveBinaryToFile(file_name_prefix + ".c", code.c_str());
+
+  std::string compiler = "/home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/riscv-tools/riscv-install/bin/riscv32-unknown-elf-gcc";
+  std::string flags = "-march=rv32ima -static -std=gnu99 -ffast-math -fno-common -fno-builtin-printf";
+  std::string includes = "-I/home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/spmd/common/";
+  includes += " -I/home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/bsg_manycore_lib";
+  std::string dynamics = "-Dbsg_tiles_X=2 -Dbsg_tiles_Y=2 -Dbsg_global_X=4 -Dbsg_global_Y=4 -Dbsg_group_size=4 -O2 -DPREALLOCATE=0 -DHOST_DEBUG=0";
+
+  std::string cmd = compiler + " " + flags + " " + includes + " " + dynamics;
+  cmd += " -c " + file_name_prefix + ".c -o " + file_name_prefix + ".o";
+
+  LOG(INFO) << cmd;
+
+  if (system(cmd.c_str()) != 0) {
+    LOG(FATAL) << "Error while compiling CUDA-Lite code";
+  }
+
+  // TODO Chage to return module with loaded binary
   return codegen::DeviceSourceModuleCreate(code, "cuda-lite", ExtractFuncInfo(funcs), "cuda-lite");
 
   /*

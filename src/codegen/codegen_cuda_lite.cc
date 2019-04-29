@@ -25,7 +25,8 @@ void CodeGenCUDALite::Init(bool output_ssa) {
 }
 
 void CodeGenCUDALite::AddFunction(LoweredFunc f) {
-  this->stream << "extern \"C\" __global__ ";
+  // TODO Temporarily remove the extern "C" __global__ thing
+  //this->stream << "extern \"C\" __global__ ";
   CodeGenC::AddFunction(f);
   LOG(INFO) << f->body;
 }
@@ -33,7 +34,26 @@ void CodeGenCUDALite::AddFunction(LoweredFunc f) {
 std::string CodeGenCUDALite::Finish() {
   decl_stream << "#include \"bsg_manycore.h\"\n";
   decl_stream << "#include \"bsg_set_tile_x_y.h\"\n";
+
+  //decl_stream << "#define bsg_tiles_X 4\n";
+  //decl_stream << "#define bsg_tiles_Y 4\n";
+
+  decl_stream << "#define BARRIER_X_START 0\n";
+  decl_stream << "#define BARRIER_Y_START 0\n";
+  decl_stream << "#define BARRIER_X_END (bsg_tiles_X - 1)\n";
+  decl_stream << "#define BARRIER_Y_END (bsg_tiles_Y - 1)\n";
+
+  decl_stream << "#define BSG_TILE_GROUP_Z_DIM 1\n";
+  decl_stream << "#define BSG_TILE_GROUP_Y_DIM 2\n";
+  decl_stream << "#define BSG_TILE_GROUP_X_DIM 2\n";
+  decl_stream << "#define BSG_TILE_GROUP_SIZE (BSG_TILE_GROUP_X_DIM * BSG_TILE_GROUP_Y_DIM)\n";
+
   decl_stream << "#include \"bsg_tile_group_barrier.h\"\n";
+
+  decl_stream << "INIT_TILE_GROUP_BARRIER (row_barrier_inst1, col_barrier_inst1, BARRIER_X_START, BARRIER_X_END, BARRIER_Y_START, BARRIER_Y_END)\n";
+  decl_stream << "INIT_TILE_GROUP_BARRIER (row_barrier_inst2, col_barrier_inst2, BARRIER_X_START, BARRIER_X_END, BARRIER_Y_START, BARRIER_Y_END)\n";
+  decl_stream << "INIT_TILE_GROUP_BARRIER (row_barrier_inst3, col_barrier_inst3, BARRIER_X_START, BARRIER_X_END, BARRIER_Y_START, BARRIER_Y_END)\n";
+
 
   if (enable_fp16_) {
     decl_stream << "#include <cuda_fp16.h>\n";
@@ -77,13 +97,13 @@ std::vector<int> CodeGenCUDALite::PrintCUDALiteKernelLoop() {
     std::vector<int> scope_id;
 
   PrintIndent();
-  stream << "for (iter_z = bsg_z; iter_z < k_blockDim_z; iter_z += BSG_TILE_GROUP_Z_DIM){\n";
+  stream << "for (int iter_z = bsg_z; iter_z < k_blockDim_z; iter_z += BSG_TILE_GROUP_Z_DIM){\n";
   scope_id.push_back( BeginScope() );
   PrintIndent();
-  stream << "for (iter_y = bsg_y; iter_y < k_blockDim_y; iter_y += BSG_TILE_GROUP_Y_DIM){\n";
+  stream << "for (int iter_y = bsg_y; iter_y < k_blockDim_y; iter_y += BSG_TILE_GROUP_Y_DIM){\n";
   scope_id.push_back( BeginScope() );
   PrintIndent();
-  stream << "for (iter_x = bsg_x; iter_x < k_blockDim_x; iter_x += BSG_TILE_GROUP_X_DIM){\n";
+  stream << "for (int iter_x = bsg_x; iter_x < k_blockDim_x; iter_x += BSG_TILE_GROUP_X_DIM){\n";
   scope_id.push_back( BeginScope() );
 
   return scope_id;
