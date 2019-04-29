@@ -21,6 +21,7 @@ endif()
 # and add set(OPTION VALUE) to override these build options.
 # Alernatively, use cmake -DOPTION=VALUE through command-line.
 tvm_option(USE_CUDA "Build with CUDA" OFF)
+tvm_option(USE_CUDA_Lite "Build with CUDA-Lite" OFF)
 tvm_option(USE_OPENCL "Build with OpenCL" OFF)
 tvm_option(USE_VULKAN "Build with Vulkan" OFF)
 tvm_option(USE_OPENGL "Build with OpenGL" OFF)
@@ -173,6 +174,12 @@ if(USE_RPC)
   file(GLOB RUNTIME_RPC_SRCS src/runtime/rpc/*.cc)
   list(APPEND RUNTIME_SRCS ${RUNTIME_RPC_SRCS})
 endif(USE_RPC)
+
+if(USE_CUDA_LITE)
+  message(STATUS "Build with CUDA-Lite support...")
+  #file(GLOB RUNTIME_RPC_SRCS src/runtime/rpc/*.cc)
+  list(APPEND COMPILER_SRCS src/codegen/opt/build_cuda_lite_on.cc)
+endif(USE_CUDA_LITE)
 
 file(GLOB STACKVM_RUNTIME_SRCS src/runtime/stackvm/*.cc)
 file(GLOB STACKVM_CODEGEN_SRCS src/codegen/stackvm/*.cc)

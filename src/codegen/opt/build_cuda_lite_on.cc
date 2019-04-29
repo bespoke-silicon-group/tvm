@@ -8,16 +8,11 @@
 #if defined(__linux__)
 #include <sys/stat.h>
 #endif
-#include <cuda_runtime.h>
 #include <tvm/base.h>
-#include <nvrtc.h>
 #include <cstdlib>
 
 #include "../codegen_cuda_lite.h"
 #include "../build_common.h"
-//#include "../../runtime/cuda/cuda_common.h"
-//#include "../../runtime/cuda/cuda_module.h"
-
 
 namespace tvm {
 namespace codegen {

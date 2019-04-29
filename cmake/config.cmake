@@ -31,6 +31,8 @@
 # - /path/to/cuda: use specific path to cuda toolkit
 set(USE_CUDA OFF)
 
+set(USE_CUDA_LITE OFF)
+
 # Whether enable ROCM runtime
 #
 # Possible values:
