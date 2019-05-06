@@ -26,6 +26,7 @@ C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
 
 s = tvm.create_schedule(C.op)
 bx, tx = s[C].split(C.op.axis[0], factor=64)
+# bx, tx = s[C].split(C.op.axis[0], factor=1)
 
 if tgt == "cuda_lite" or tgt == "hbmc":
   s[C].bind(bx, tvm.thread_axis("blockIdx.x"))
