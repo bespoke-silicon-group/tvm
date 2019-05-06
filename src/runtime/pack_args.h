@@ -141,7 +141,7 @@ inline ArgConvertCode GetArgConvertCode(TVMType t) {
 template<int N, typename F>
 inline PackedFunc PackFuncVoidAddr_(F f, const std::vector<ArgConvertCode>& codes) {
   int num_args = static_cast<int>(codes.size());
-  LOG(INFO) << "num_args: " << num_args;
+  //LOG(INFO) << "num_args: " << num_args;
   auto ret = [f, codes, num_args](TVMArgs args, TVMRetValue* ret) {
     TempArray<void*, N> addr_(num_args);
     TempArray<ArgUnion, N> holder_(num_args);
@@ -152,7 +152,7 @@ inline PackedFunc PackFuncVoidAddr_(F f, const std::vector<ArgConvertCode>& code
         case INT64_TO_INT64:
         case FLOAT64_TO_FLOAT64:
         case HANDLE_TO_HANDLE: {
-          LOG(INFO) << "In case HANDLE_TO_HANDLE";
+          //LOG(INFO) << "In case HANDLE_TO_HANDLE";
           addr[i] = (void*)&(args.values[i]);  // NOLINT(*)
           break;
         }

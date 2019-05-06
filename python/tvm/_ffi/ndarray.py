@@ -120,8 +120,8 @@ def empty(shape, dtype="float32", ctx=context(1, 0)):
     arr : tvm.nd.NDArray
         The array tvm supported.
     """
-    print("ndarray.py empy() ctx.device_type = " + str(ctx.device_type))
-    print("ndarray.py empy() ctx.device_id = " + str(ctx.device_id))
+    #print("ndarray.py empy() ctx.device_type = " + str(ctx.device_type))
+    #print("ndarray.py empy() ctx.device_id = " + str(ctx.device_id))
     shape = c_array(tvm_shape_index_t, shape)
     ndim = ctypes.c_int(len(shape))
     handle = TVMArrayHandle()

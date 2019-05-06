@@ -74,10 +74,10 @@ Module Module::LoadFromFile(const std::string& file_name,
   }
   if (fmt == "hbmc" || fmt == "riscv" ) {
     fmt = "hbmc";
-    std::cout << "detect format = hbmc\n";
+    //std::cout << "detect format = hbmc\n";
   }
   std::string load_f_name = "module.loadfile_" + fmt;
-  std::cout << "Module::LoadFromFile() " << load_f_name << std::endl;
+  //std::cout << "Module::LoadFromFile() " << load_f_name << std::endl;
   const PackedFunc* f = Registry::Get(load_f_name);
   CHECK(f != nullptr)
       << "Loader of " << format << "("
@@ -104,7 +104,7 @@ std::string ModuleNode::GetSource(const std::string& format) {
 }
 
 const PackedFunc* ModuleNode::GetFuncFromEnv(const std::string& name) {
-  std::cout << "Call ModuleNode::GetFuncFromEnv(), name = " << name << std::endl;
+  //std::cout << "Call ModuleNode::GetFuncFromEnv(), name = " << name << std::endl;
   auto it = import_cache_.find(name);
   if (it != import_cache_.end()) return it->second.get();
   PackedFunc pf;

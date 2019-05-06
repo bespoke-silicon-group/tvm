@@ -35,8 +35,9 @@ class HBMCModuleNode : public runtime::ModuleNode {
   explicit HBMCModuleNode(std::string data,
                           std::string fmt,
                           std::unordered_map<std::string, FunctionInfo> fmap,
-                          std::string hbmc_source)
-      : data_(data), fmt_(fmt), fmap_(fmap), hbmc_source_(hbmc_source) {
+                          std::string hbmc_source,
+                          std::string file_name)
+      : data_(data), fmt_(fmt), fmap_(fmap), hbmc_source_(hbmc_source), file_name_(file_name) {
     //std::fill(module_.begin(), module_.end(), nullptr);
   }
   // destructor
@@ -98,6 +99,13 @@ class HBMCModuleNode : public runtime::ModuleNode {
     return hbmc_source_;
   }
 
+  std::string GetData() {
+    return data_;
+  }
+
+  std::string GetFilename() {
+    return file_name_;
+  }
   /*
   // get a CUfunction from primary context in device_id
   CUfunction GetFunc(int device_id, const std::string& func_name) {
@@ -154,6 +162,8 @@ class HBMCModuleNode : public runtime::ModuleNode {
   std::unordered_map<std::string, FunctionInfo> fmap_;
   // The cuda source.
   std::string hbmc_source_;
+  // The path to the binary file
+  std::string file_name_;
   // the internal modules per GPU, to be lazily initialized.
   // std::array<CUmodule, kMaxNumGPUs> module_;
   // internal mutex when updating the module
@@ -169,7 +179,7 @@ class HBMCWrappedFunc {
             const std::string& func_name,
             size_t num_void_args,
             const std::vector<std::string>& thread_axis_tags) {
-    std::cout << "Call HBMCWrappedFunc Init()\n";
+    //std::cout << "Call HBMCWrappedFunc Init()\n";
     m_ = m;
     sptr_ = sptr;
     func_name_ = func_name;
@@ -180,9 +190,10 @@ class HBMCWrappedFunc {
   void operator()(TVMArgs args,
                   TVMRetValue* rv,
                   void** void_args) const {
-    std::cout << "Call HBMCWrappedFunc operator()\n";
-    LOG(INFO) << "args.num_args = " << args.num_args;
+    //std::cout << "Call HBMCWrappedFunc operator()\n";
+    //LOG(INFO) << "args.num_args = " << args.num_args;
 
+    /*
     for (int i=0; i < args.num_args; i++) {
         LOG(INFO) << TypeCode2Str(args.type_codes[i]);
         if (args.type_codes[i] == kHandle) {
@@ -197,13 +208,14 @@ class HBMCWrappedFunc {
             LOG(INFO) << "kDLInt " << handle;
         }
     }
+    */
 
-    printf("void_args[0] = 0x%x\n", *(uint32_t*)void_args[0]);
-    printf("void_args[1] = 0x%x\n", *(uint32_t*)void_args[1]);
-    printf("void_args[2] = 0x%x\n", *(uint32_t*)void_args[2]);
-    printf("void_args[2] = %d\n", *(int32_t*)void_args[3]);
+    printf("kernel_args[0] = 0x%x\n", *(uint32_t*)void_args[0]);
+    printf("kernel_args[1] = 0x%x\n", *(uint32_t*)void_args[1]);
+    printf("kernel_args[2] = 0x%x\n", *(uint32_t*)void_args[2]);
+    printf("kernel_args[2] = %d\n", *(int32_t*)void_args[3]);
 
-    LOG(INFO) << "func_name_ = " << func_name_;
+    //LOG(INFO) << "func_name_ = " << func_name_;
     char *local_f_name = new char [func_name_.length()+1];
     strcpy(local_f_name, func_name_.c_str());
 
@@ -215,8 +227,13 @@ class HBMCWrappedFunc {
     uint32_t num_tiles = 1;
 
     uint32_t argv[4] = {*(uint32_t*)void_args[1], *(uint32_t*)void_args[2], *(uint32_t*)void_args[0], *(uint32_t*)void_args[3]};
-    char *elf_path = "/home/centos/tvm-hb/tutorials/hbmc/myadd.riscv";
-    int error = hb_mc_device_launch(0, 0, local_f_name, 4, argv, elf_path, tiles, num_tiles); /* launch the kernel */
+    char elf_path[m_->GetFilename().size() + 1];
+    strcpy(elf_path, m_->GetFilename().c_str());
+
+    std::cout << "lunch kernel " << func_name_ << "() on hammerblade manycore"<< std::endl;
+    if (hb_mc_device_launch(0, 0, local_f_name, 4, argv, elf_path, tiles, num_tiles) != HB_MC_SUCCESS) {
+        LOG(FATAL) << "Unable to launch hbmc device code";
+    }
     hb_mc_cuda_sync(0, &tiles[0]); /* if CUDA sync is correct, this program won't hang here. */
   }
 
@@ -266,7 +283,7 @@ class CUDAPrepGlobalBarrier {
 PackedFunc HBMCModuleNode::GetFunction(
       const std::string& name,
       const std::shared_ptr<ModuleNode>& sptr_to_self) {
-  std::cout << "Call HBMCModuleNode GetFunction():  " << name << std::endl;
+  //std::cout << "Call HBMCModuleNode GetFunction():  " << name << std::endl;
   CHECK_EQ(sptr_to_self.get(), this);
   CHECK_NE(name, symbol::tvm_module_main)
       << "Device function do not have main";
@@ -282,13 +299,15 @@ PackedFunc HBMCModuleNode::GetFunction(
 }
 
 Module HBMCModuleCreate(
-    std::string data,
-    std::string fmt,
-    std::unordered_map<std::string, FunctionInfo> fmap,
-    std::string hb_source) {
+  std::string data,
+  std::string fmt,
+  std::unordered_map<std::string, FunctionInfo> fmap,
+  std::string hb_source,
+  std::string file_name) {
+
   std::shared_ptr<HBMCModuleNode> n =
-      std::make_shared<HBMCModuleNode>(data, fmt, fmap, hb_source);
-  std::cout << "Call HBMCModuleCreate()" << std::endl;
+    std::make_shared<HBMCModuleNode>(data, fmt, fmap, hb_source, file_name);
+  //std::cout << "Call HBMCModuleCreate()" << std::endl;
   return Module(n);
 }
 
@@ -301,9 +320,9 @@ Module HBMCModuleLoadFile(const std::string& file_name,
   std::string meta_file = GetMetaFilePath(file_name);
   LoadBinaryFromFile(file_name, &data);
   LoadMetaDataFromFile(meta_file, &fmap);
-  std::cout << "Call HBMCModuleLoadFile()" << std::endl;
+  //std::cout << "Call HBMCModuleLoadFile()" << std::endl;
 
-  return HBMCModuleCreate(data, fmt, fmap, std::string());
+  return HBMCModuleCreate(data, fmt, fmap, std::string(), file_name);
 }
 
 /*

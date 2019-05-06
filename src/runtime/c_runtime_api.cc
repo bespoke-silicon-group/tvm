@@ -388,7 +388,7 @@ int TVMModGetFunction(TVMModuleHandle mod,
                       int query_imports,
                       TVMFunctionHandle *func) {
   API_BEGIN();
-  std::cout << "Call TVMModGetFunction() in c_runtime_api.cc, func_name = " << func_name << std::endl;
+  //std::cout << "Call TVMModGetFunction() in c_runtime_api.cc, func_name = " << func_name << std::endl;
   PackedFunc pf = static_cast<Module*>(mod)->GetFunction(
       func_name, query_imports != 0);
   if (pf != nullptr) {
@@ -409,7 +409,7 @@ int TVMBackendGetFuncFromEnv(void* mod_node,
                              const char* func_name,
                              TVMFunctionHandle *func) {
   API_BEGIN();
-  std::cout << "Call c_runtime_api::TVMBackendGetFunFromEnv(), func_name = " << func_name << std::endl;
+  //std::cout << "Call c_runtime_api::TVMBackendGetFunFromEnv(), func_name = " << func_name << std::endl;
   *func = (TVMFunctionHandle)(
       static_cast<ModuleNode*>(mod_node)->GetFuncFromEnv(func_name));
   API_END();

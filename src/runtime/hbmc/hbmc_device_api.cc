@@ -19,12 +19,12 @@ class HBMCDeviceAPI final : public DeviceAPI {
     init_flag = false;
   }
   void SetDevice(TVMContext ctx) final {
-    std::cout << "Call HBMCDeviceAPI::SetDevice()";
+    //std::cout << "Call HBMCDeviceAPI::SetDevice()";
 
     if (init_flag == false) {
-      std::cout << "Initializing HBMC host...\n";
+      //std::cout << "Initializing HBMC host...\n";
       hb_mc_init_host((uint8_t*)&(ctx.device_id));
-      LOG(INFO) << "ctx.device_id: " << ctx.device_id;
+      //LOG(INFO) << "ctx.device_id: " << ctx.device_id;
 
       tile_t tiles[1];
       tiles[0].x = 0;
@@ -51,25 +51,27 @@ class HBMCDeviceAPI final : public DeviceAPI {
                        size_t nbytes,
                        size_t alignment,
                        TVMType type_hint) final {
-    std::cout << "Call HBMC AllocDataSpace()\n";
+    //std::cout << "Call HBMCDeviceAPI::AllocDataSpace()\n";
     HBMCDeviceAPI::SetDevice(ctx);
 
+    /*
     std::cout << "HBMCDeviceAPI::AllocDataSpace(): ";
     std::cout << "ctx.(device_type, device_id) = (" << ctx.device_type;
     std::cout << ", " << ctx.device_id << ")" << std::endl;
+    */
 
     eva_id_t eva_id = 0; // set eva_id to zero to make malloc func work
 
     eva_t ptr;
     hb_mc_device_malloc(eva_id, nbytes, &ptr);
-    printf("malloc addr: 0x%x\n", ptr);
+    printf("allocate FPGA memory at addr: 0x%x\n", ptr);
 
     return (void*) ptr;
   }
 
   void FreeDataSpace(TVMContext ctx, void* ptr) final {
-    std::cout << "Call HBMC FreeDataSpace()\n";
-    printf("free addr: 0x%x\n", reinterpret_cast<uint32_t*>(ptr));
+    //std::cout << "Call HBMCDeviceAPI::FreeDataSpace()\n";
+    printf("free FPGA memory at addr: 0x%x\n", reinterpret_cast<uint32_t*>(ptr));
 
     eva_id_t eva_id = 0; // set eva_id to zero to make malloc func work
     hb_mc_device_free(eva_id, static_cast<uint32_t>(
@@ -85,34 +87,40 @@ class HBMCDeviceAPI final : public DeviceAPI {
                       TVMContext ctx_to,
                       TVMType type_hint,
                       TVMStreamHandle stream) final {
-    std::cout << "Call HBMC CopyDataFromTo()\n";
+    //std::cout << "Call HBMCDeviceAPI::CopyDataFromTo()\n";
 
+    /*
     std::cout << "size: " << size << std::endl;
-
     std::cout << "HBMCDeviceAPI::CopyFromBytes(): \n";
     std::cout << "ctx_from.(device_type, device_id) = (" << ctx_from.device_type;
     std::cout << ", " << ctx_from.device_id << ")" << std::endl;
     std::cout << "ctx_to.(device_type, device_id) = (" << ctx_to.device_type;
     std::cout << ", " << ctx_to.device_id << ")" << std::endl;
+    */
 
     if (ctx_from.device_type == kDLCPU) {
-      printf("from addr: 0x%x\n", 
+      printf("copy from host mem addr: 0x%x ", 
               reinterpret_cast<uint64_t*>((void*) from));
-      printf("to addr: 0x%x\n", reinterpret_cast<uint32_t*>(to));
+      printf("to fpga mem addr: 0x%x, ", reinterpret_cast<uint32_t*>(to));
+      printf("size %d\n", size);
       if (hb_mc_device_memcpy(ctx_to.device_id, (eva_id_t) 0, to, 
           from, size, hb_mc_memcpy_to_device) != HB_MC_SUCCESS)
         LOG(FATAL) << "Unable to memcpy from host to hbmc device.";
 
       int32_t *arr = static_cast<int32_t*>((void*)from);
+      /*
       printf("from[0:8]: ");
       for (int i = 0; i < 8; i++)
         printf("%d ", arr[i]); 
       printf("\n");
+      */
     }
     else {
-      printf("from addr: 0x%x\n", 
-              reinterpret_cast<uint32_t*>((void*)from));
-      printf("to addr: 0x%x\n", reinterpret_cast<uint64_t*>(to));
+      printf("copy from fpga mem addr: 0x%x ", 
+              reinterpret_cast<uint64_t*>((void*) from));
+      printf("to host mem addr: 0x%x, ", reinterpret_cast<uint32_t*>(to));
+      printf("size %d\n", size);
+
       if (hb_mc_device_memcpy(ctx_to.device_id, (eva_id_t) 0, to, 
           from, size, hb_mc_memcpy_to_host) != HB_MC_SUCCESS)
         LOG(FATAL) << "Could not do memory copy from host to hbmc device.";

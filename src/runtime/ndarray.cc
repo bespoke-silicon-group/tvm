@@ -81,10 +81,12 @@ struct NDArray::Internal {
   static NDArray Create(std::vector<int64_t> shape,
                         DLDataType dtype,
                         DLContext ctx) {
+    /*
     std::cout << "Call NDArray::Create" << std::endl;
     std::cout << "NDArray::Create(): ";
     std::cout << "ctx.(device_type, device_id) = (" << ctx.device_type;
     std::cout << ", " << ctx.device_id << ")" << std::endl;
+    */
 
     VerifyDataType(dtype);
     // critical zone
@@ -148,12 +150,14 @@ DLManagedTensor* NDArray::ToDLPack() const {
 NDArray NDArray::Empty(std::vector<int64_t> shape,
                        DLDataType dtype,
                        DLContext ctx) {
-  std::cout << "Call NDArray::Empty() in runtime/ndarray.cc\n";
+  //std::cout << "Call NDArray::Empty() in runtime/ndarray.cc\n";
   NDArray ret = Internal::Create(shape, dtype, ctx);
 
+  /*
   std::cout << "NDArray::Empty(): " << std::endl;
   std::cout << "ret->ctx.(device_type, device_id) = (" << ret->ctx.device_type;
   std::cout << ", " << ret->ctx.device_id << ")" << std::endl;
+  */
 
   size_t size = GetDataSize(ret.data_->dl_tensor);
   size_t alignment = GetDataAlignment(ret.data_->dl_tensor);
@@ -187,8 +191,10 @@ void NDArray::CopyFromTo(DLTensor* from,
   // Use the context that is *not* a cpu context to get the correct device
   // api manager.
   TVMContext ctx = from->ctx.device_type != kDLCPU ? from->ctx : to->ctx;
+  /*
   std::cout << "NDArray, from->ctx.device_id " << from->ctx.device_id << std::endl;
   std::cout << "NDArray, tp->ctx.device_id " << to->ctx.device_id << std::endl;
+  */
 
   DeviceAPI::Get(ctx)->CopyDataFromTo(
     from->data, static_cast<size_t>(from->byte_offset),
@@ -215,7 +221,7 @@ int TVMArrayAlloc(const tvm_index_t* shape,
                   int device_id,
                   TVMArrayHandle* out) {
   API_BEGIN();
-  std::cout << "Call TVMArrayAlloc() in runtime/ndarray.cc\n";
+  //std::cout << "Call TVMArrayAlloc() in runtime/ndarray.cc\n";
   DLDataType dtype;
   dtype.code = static_cast<uint8_t>(dtype_code);
   dtype.bits = static_cast<uint8_t>(dtype_bits);
@@ -224,9 +230,11 @@ int TVMArrayAlloc(const tvm_index_t* shape,
   ctx.device_type = static_cast<DLDeviceType>(device_type);
   ctx.device_id = device_id;
 
+  /*
   std::cout << "TVMArrayAlloc: ";
   std::cout << "ctx.device_type: " << ctx.device_type << " ";
   std::cout << "ctx.device_id: " << ctx.device_id << std::endl;
+  */
 
   *out = NDArray::Internal::MoveAsDLTensor(
       NDArray::Empty(std::vector<int64_t>(shape, shape + ndim), dtype, ctx));
@@ -276,9 +284,11 @@ int TVMArrayCopyFromBytes(TVMArrayHandle handle,
   CHECK_EQ(arr_size, nbytes)
       << "TVMArrayCopyFromBytes: size mismatch";
 
+  /*
   std::cout << "NDArray::TVMArrayCopyFromBytes(): ";
   std::cout << "handle->ctx.(device_type, device_id) = (" << handle->ctx.device_type;
   std::cout << ", " << handle->ctx.device_id << ")" << std::endl;
+  */
 
   DeviceAPI::Get(handle->ctx)->CopyDataFromTo(
       data, 0,
