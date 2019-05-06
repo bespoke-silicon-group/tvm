@@ -27,6 +27,7 @@ void CodeGenCUDALite::Init(bool output_ssa) {
 void CodeGenCUDALite::AddFunction(LoweredFunc f) {
   // TODO Temporarily remove the extern "C" __global__ thing
   //this->stream << "extern \"C\" __global__ ";
+  //this->stream << "__attribute__";
   CodeGenC::AddFunction(f);
   LOG(INFO) << f->body;
 }
@@ -38,21 +39,11 @@ std::string CodeGenCUDALite::Finish() {
   //decl_stream << "#define bsg_tiles_X 4\n";
   //decl_stream << "#define bsg_tiles_Y 4\n";
 
-  decl_stream << "#define BARRIER_X_START 0\n";
-  decl_stream << "#define BARRIER_Y_START 0\n";
-  decl_stream << "#define BARRIER_X_END (bsg_tiles_X - 1)\n";
-  decl_stream << "#define BARRIER_Y_END (bsg_tiles_Y - 1)\n";
-
-  decl_stream << "#define BSG_TILE_GROUP_Z_DIM 1\n";
-  decl_stream << "#define BSG_TILE_GROUP_Y_DIM 2\n";
-  decl_stream << "#define BSG_TILE_GROUP_X_DIM 2\n";
-  decl_stream << "#define BSG_TILE_GROUP_SIZE (BSG_TILE_GROUP_X_DIM * BSG_TILE_GROUP_Y_DIM)\n";
+  decl_stream << "#define BSG_TILE_GROUP_X_DIM bsg_tiles_X\n";
+  decl_stream << "#define BSG_TILE_GROUP_Y_DIM bsg_tiles_Y\n";
 
   decl_stream << "#include \"bsg_tile_group_barrier.h\"\n";
-
-  decl_stream << "INIT_TILE_GROUP_BARRIER (row_barrier_inst1, col_barrier_inst1, BARRIER_X_START, BARRIER_X_END, BARRIER_Y_START, BARRIER_Y_END)\n";
-  decl_stream << "INIT_TILE_GROUP_BARRIER (row_barrier_inst2, col_barrier_inst2, BARRIER_X_START, BARRIER_X_END, BARRIER_Y_START, BARRIER_Y_END)\n";
-  decl_stream << "INIT_TILE_GROUP_BARRIER (row_barrier_inst3, col_barrier_inst3, BARRIER_X_START, BARRIER_X_END, BARRIER_Y_START, BARRIER_Y_END)\n";
+  decl_stream << "INIT_TILE_GROUP_BARRIER (r_barrier, c_barrier, 0, bsg_tiles_X-1, 0, bsg_tiles_Y-1)\n";
 
 
   if (enable_fp16_) {
@@ -67,6 +58,7 @@ std::string CodeGenCUDALite::Finish() {
 }
 
 void CodeGenCUDALite::PrintCUDALiteKernelHead() {
+  /*
   PrintIndent();
   stream << "const int k_gridDim_x = 1;\n";
   PrintIndent();
@@ -89,12 +81,13 @@ void CodeGenCUDALite::PrintCUDALiteKernelHead() {
   stream << "const int bsg_z = 0;\n";
 
   stream << std::endl;
+  */
   PrintIndent();
-  stream << "int id = bsg_x_y_to_id(bsg_x, bsg_y);\n\n";
+  stream << "int id = bsg_x_y_to_id(__bsg_x, __bsg_y);\n\n";
 }
 
 std::vector<int> CodeGenCUDALite::PrintCUDALiteKernelLoop() {
-    std::vector<int> scope_id;
+  std::vector<int> scope_id;
 
   PrintIndent();
   stream << "for (int iter_z = bsg_z; iter_z < k_blockDim_z; iter_z += BSG_TILE_GROUP_Z_DIM){\n";
@@ -121,10 +114,18 @@ void CodeGenCUDALite::PrintCUDALiteKernelLoopTail(std::vector<int> id) {
   stream << "}\n";
 }
 
+void CodeGenCUDALite::PrintCUDALiteAKernelLoop() {
+  PrintIndent();
+  stream << "for (int i = id; i < n; i += bsg_tiles_X*bsg_tiles_Y){\n";
+  stream << "\tC[i] = A[i] + B[i];\n";
+  PrintIndent();
+  stream << "}\n";
+}
+
 void CodeGenCUDALite::PrintCUDALiteBarrier() {
   stream << std::endl;
   PrintIndent();
-  stream << "bsg_tile_group_barrier(&row_barrier_inst2, &col_barrier_inst2);"
+  stream << "bsg_tile_group_barrier(&r_barrier, &c_barrier);"
          << std::endl;
 }
 
@@ -133,11 +134,12 @@ void CodeGenCUDALite::VisitStmt_(const ir::AttrStmt* op) {
     cuda_lite_flag_ = true;
 
     PrintCUDALiteKernelHead();
-    std::vector<int> scope_id = PrintCUDALiteKernelLoop();
+    //std::vector<int> scope_id = PrintCUDALiteKernelLoop();
 
-    CodeGenC::VisitStmt_(op);
+    //CodeGenC::VisitStmt_(op);
 
-    PrintCUDALiteKernelLoopTail(scope_id);
+    //PrintCUDALiteKernelLoopTail(scope_id);
+    PrintCUDALiteAKernelLoop();
     PrintCUDALiteBarrier();
 
     cuda_lite_flag_ = false;
@@ -163,8 +165,7 @@ void CodeGenCUDALite::BindThreadIndex(const IterVar& iv) {
   tmp_thread_tag[tmp_thread_tag.length()-2] = '_';
   std::size_t found = tmp_thread_tag.find("threadIdx");
   if (found!=std::string::npos)
-    tmp_thread_tag.replace(tmp_thread_tag.begin(), tmp_thread_tag.end() - 2, 
-                           tmp_str);  
+    tmp_thread_tag.replace(tmp_thread_tag.begin(), tmp_thread_tag.end() - 2, tmp_str);  
   var_idmap_[iv->var.get()] =
       //CastFromTo(iv->thread_tag, UInt(32), iv->var.type());
       CastFromTo(tmp_thread_tag, UInt(32), iv->var.type());

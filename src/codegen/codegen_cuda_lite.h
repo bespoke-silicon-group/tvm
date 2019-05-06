@@ -21,6 +21,7 @@ class CodeGenCUDALite final : public CodeGenC {
   void AddFunction(LoweredFunc f);
   void PrintCUDALiteKernelHead();
   std::vector<int> PrintCUDALiteKernelLoop();
+  void PrintCUDALiteAKernelLoop();
   void PrintCUDALiteKernelLoopTail(std::vector<int> id);
   void PrintCUDALiteBarrier();
   std::string Finish();

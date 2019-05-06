@@ -46,10 +46,26 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   cmd += " -c " + file_name_prefix + ".c -o " + file_name_prefix + ".o";
 
   LOG(INFO) << cmd;
-
-  if (system(cmd.c_str()) != 0) {
+  // compile the kernel object code
+  if (system(cmd.c_str()) != 0)
     LOG(FATAL) << "Error while compiling CUDA-Lite code";
-  }
+
+  // linke the objects 
+  std::string main_o = "/home/centos/tvm-hb/tutorials/cuda_lite/main.o";
+  std::string set_o = "/home/centos/tvm-hb/tutorials/cuda_lite/bsg_set_tile_x_y.o";
+
+  std::string compiler_t = "-T /home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/spmd/common/test.ld";
+  std::string compiler_w = "-Wl,--defsym,bsg_group_size=4";
+  std::string compiler_l = "-lc -lgcc -L /home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/spmd/common";
+  std::string compiler_misc = "-march=rv32ima -nostdlib -nostartfiles -ffast-math";
+  std::string out_name = file_name_prefix + ".riscv";
+
+  cmd = compiler + " " + compiler_t + " " + compiler_w + " " + main_o + " " + set_o + " " + file_name_prefix + ".o ";
+  cmd = cmd + "-o " + out_name + " " + compiler_misc + " " + compiler_l;
+  LOG(INFO) << cmd;
+  // compile the kernel object code
+  if (system(cmd.c_str()) != 0)
+    LOG(FATAL) << "Error while linking CUDA-Lite code";
 
   // TODO Chage to return module with loaded binary
   return codegen::DeviceSourceModuleCreate(code, "cuda-lite", ExtractFuncInfo(funcs), "cuda-lite");
