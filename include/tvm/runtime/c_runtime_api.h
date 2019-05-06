@@ -81,7 +81,6 @@ typedef enum {
   kDLAOCL = 5,
   kDLSDAccel = 6,
   kOpenGL = 11,
-  kDLHBMC = 2,
   // AddExtraTVMType which is not in DLPack here
   kDLHBMC = 13
 } TVMDeviceExtType;
