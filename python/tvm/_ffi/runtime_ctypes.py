@@ -143,6 +143,7 @@ class TVMContext(ctypes.Structure):
         10: 'rocm',
         11: 'opengl',
         12: 'ext_dev',
+        13: 'hbmc',
     }
     STR2MASK = {
         'llvm': 1,
@@ -152,7 +153,7 @@ class TVMContext(ctypes.Structure):
         'gpu': 2,
         'cuda': 2,
         'nvptx': 2,
-        'cuda_lite': 2,
+        #'cuda_lite': 2,
         'cl': 4,
         'opencl': 4,
         'aocl' : 5,
@@ -164,6 +165,8 @@ class TVMContext(ctypes.Structure):
         'rocm': 10,
         'opengl': 11,
         'ext_dev': 12,
+        'cuda_lite': 13,
+        'hbmc': 13,
     }
     def __init__(self, device_type, device_id):
         super(TVMContext, self).__init__()

@@ -79,7 +79,8 @@ Target CreateTarget(const std::string& target_name,
   t->thread_warp_size = 1;
   if (target_name == "c" || target_name == "llvm") {
     t->keys_array.push_back(ir::StringImm::make("cpu"));
-  } else if (target_name == "cuda" || target_name == "nvptx" || target_name == "cuda_lite") {
+  //} else if (target_name == "cuda" || target_name == "nvptx" || target_name == "cuda_lite") {
+  } else if (target_name == "cuda" || target_name == "nvptx") {
     t->device_type = kDLGPU;
     t->keys_array.push_back(ir::StringImm::make("cuda"));
     t->keys_array.push_back(ir::StringImm::make("gpu"));
@@ -124,6 +125,9 @@ Target CreateTarget(const std::string& target_name,
     t->device_type = kDLExtDev;
   } else if (target_name == "hybrid") {
     t->device_type = kDLCPU;
+  } else if (target_name == "cuda_lite" || target_name == "hbmc") {
+    t->device_type = kDLHBMC;
+    t->keys_array.push_back(ir::StringImm::make("hbmc"));
   } else {
     LOG(ERROR) << "Unknown target name " << target_name;
     return target::stackvm();
