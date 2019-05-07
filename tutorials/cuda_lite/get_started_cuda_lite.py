@@ -41,9 +41,12 @@ if tgt == "cuda_lite" or tgt.startswith('opencl'):
 
 #ctx = tvm.context(tgt, 0)
 #
-#n = 1024
-#a = tvm.nd.array(np.random.uniform(size=n).astype(A.dtype), ctx)
-#b = tvm.nd.array(np.random.uniform(size=n).astype(B.dtype), ctx)
-#c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
-#fadd(a, b, c)
-#tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())
+n = 32
+a = tvm.nd.array(np.random.randint(10, size=n).astype(A.dtype), ctx)
+print(a)
+b = tvm.nd.array(np.random.randint(10, size=n).astype(B.dtype), ctx)
+print(b)
+c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
+fadd(a, b, c)
+print(c)
+tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())

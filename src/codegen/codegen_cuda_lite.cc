@@ -116,7 +116,9 @@ void CodeGenCUDALite::PrintCUDALiteKernelLoopTail(std::vector<int> id) {
 
 void CodeGenCUDALite::PrintCUDALiteAKernelLoop() {
   PrintIndent();
+  // TODO remove this manually set part
   stream << "for (int i = id; i < n; i += bsg_tiles_X*bsg_tiles_Y){\n";
+  //stream << "for (int i = id; i < 16; i += 4){\n";
   stream << "\tC[i] = A[i] + B[i];\n";
   PrintIndent();
   stream << "}\n";

@@ -19,10 +19,8 @@ class HBMCDeviceAPI final : public DeviceAPI {
     init_flag = false;
   }
   void SetDevice(TVMContext ctx) final {
-    //std::cout << "Call HBMCDeviceAPI::SetDevice()";
-
     if (init_flag == false) {
-      //std::cout << "Initializing HBMC host...\n";
+      std::cout << "Call HBMCDeviceAPI::SetDevice(), Initializing HBMC host...\n";
       hb_mc_init_host((uint8_t*)&(ctx.device_id));
       //LOG(INFO) << "ctx.device_id: " << ctx.device_id;
 
@@ -35,7 +33,8 @@ class HBMCDeviceAPI final : public DeviceAPI {
       eva_id_t eva_id = 0;
 
       std::cout << "Initializing HBMC device...\n";
-      if (hb_mc_init_device(ctx.device_id, eva_id, "/home/centos/cuda_add2.riscv", 
+      // TODO hb_mc_init_device(should not take binary as input)
+      if (hb_mc_init_device(ctx.device_id, eva_id, "/home/centos/tvm-hb/tutorials/cuda_lite/myadd_kernel0.riscv", 
                             &tiles[0], num_tiles) != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize device.";
 
