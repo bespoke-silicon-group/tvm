@@ -24,18 +24,17 @@ class HBMCDeviceAPI final : public DeviceAPI {
       hb_mc_init_host((uint8_t*)&(ctx.device_id));
       //LOG(INFO) << "ctx.device_id: " << ctx.device_id;
 
-      tile_t tiles[1];
-      tiles[0].x = 0;
-      tiles[0].y = 1;
-      tiles[0].origin_x = 0;
-      tiles[0].origin_y = 1;
-      uint32_t num_tiles = 1;
+      tile_t tiles[4];
+      uint32_t num_tiles = 4, num_tiles_x = 2, num_tiles_y = 2, origin_x = 0, origin_y = 1;
+      /* 2 x 2 tile group at (0, 1) */
+      create_tile_group(tiles, num_tiles_x, num_tiles_y, origin_x, origin_y); 
+
       eva_id_t eva_id = 0;
 
       std::cout << "Initializing HBMC device...\n";
+      char elf_path[] = "/home/centos/tvm-hb/tutorials/cuda_lite/myadd_kernel0.riscv";
       // TODO hb_mc_init_device(should not take binary as input)
-      if (hb_mc_init_device(ctx.device_id, eva_id, "/home/centos/tvm-hb/tutorials/cuda_lite/myadd_kernel0.riscv", 
-                            &tiles[0], num_tiles) != HB_MC_SUCCESS)
+      if (hb_mc_init_device(ctx.device_id, eva_id, elf_path, &tiles[0], num_tiles) != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize device.";
 
       init_flag = true;

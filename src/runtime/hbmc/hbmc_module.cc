@@ -219,21 +219,18 @@ class HBMCWrappedFunc {
     char *local_f_name = new char [func_name_.length()+1];
     strcpy(local_f_name, func_name_.c_str());
 
-    tile_t tiles[1];
-    tiles[0].x = 0;
-    tiles[0].y = 1;
-    tiles[0].origin_x = 0;
-    tiles[0].origin_y = 1;
-    uint32_t num_tiles = 1;
+    tile_t tiles[4];
+    uint32_t num_tiles = 4, num_tiles_x = 2, num_tiles_y = 2, origin_x = 0, origin_y = 1;
+    /* 2 x 2 tile group at (0, 1) */
+    create_tile_group(tiles, num_tiles_x, num_tiles_y, origin_x, origin_y); 
 
+    char elf_path[m_->GetFilename().size() + 1];
+    strcpy(elf_path, m_->GetFilename().c_str());
+    //std::cout << "elf_path = " << elf_path << std::endl;
     // TODO automate this part, looks like it's always num of args minus 2?
     uint32_t argv[4] = {*(uint32_t*)void_args[0], *(uint32_t*)void_args[1], *(uint32_t*)void_args[2],*(uint32_t*)void_args[3]};
-    //char elf_path[m_->GetFilename().size() + 1];
-    //strcpy(elf_path, m_->GetFilename().c_str());
 
     std::cout << "lunch kernel " << func_name_ << "() on hammerblade manycore"<< std::endl;
-    char elf_path[] = "/home/centos/tvm-hb/tutorials/cuda_lite/myadd_kernel0.riscv";
-    std::cout << "elf_path = " << elf_path << std::endl;
     if (hb_mc_device_launch(0, 0, local_f_name, 4, argv, elf_path, tiles, num_tiles) != HB_MC_SUCCESS) {
         LOG(FATAL) << "Unable to launch hbmc device code";
     }

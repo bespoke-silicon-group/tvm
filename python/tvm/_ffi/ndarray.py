@@ -76,7 +76,6 @@ def context(dev_type, dev_id=0):
     """
     if isinstance(dev_type, string_types):
         dev_type = dev_type.split()[0]
-        print dev_type
         if dev_type not in TVMContext.STR2MASK:
             raise ValueError("Unknown device type %s" % dev_type)
         dev_type = TVMContext.STR2MASK[dev_type]
