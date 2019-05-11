@@ -36,9 +36,6 @@ std::string CodeGenCUDALite::Finish() {
   decl_stream << "#include \"bsg_manycore.h\"\n";
   decl_stream << "#include \"bsg_set_tile_x_y.h\"\n";
 
-  //decl_stream << "#define bsg_tiles_X 4\n";
-  //decl_stream << "#define bsg_tiles_Y 4\n";
-
   decl_stream << "#define BSG_TILE_GROUP_X_DIM bsg_tiles_X\n";
   decl_stream << "#define BSG_TILE_GROUP_Y_DIM bsg_tiles_Y\n";
 
@@ -58,70 +55,27 @@ std::string CodeGenCUDALite::Finish() {
 }
 
 void CodeGenCUDALite::PrintCUDALiteKernelHead() {
-  /*
   PrintIndent();
-  stream << "const int k_gridDim_x = 1;\n";
-  PrintIndent();
-  stream << "const int k_gridDim_y = 1;\n";
-  PrintIndent();
-  stream << "const int k_gridDim_z = 1;\n";
-  PrintIndent();
-  stream << "const int k_blockDim_x = 64;\n";
-  PrintIndent();
-  stream << "const int k_blockDim_y = 1;\n";
-  PrintIndent();
-  stream << "const int k_blockDim_z = 1;\n";
-  PrintIndent();
-  stream << "const int blockIdx_x = 0;\n";
-  PrintIndent();
-  stream << "const int blockIdx_y = 0;\n";
-  PrintIndent();
-  stream << "const int blockIdx_z = 0;\n";
-  PrintIndent();
-  stream << "const int bsg_z = 0;\n";
-
-  stream << std::endl;
-  */
-  PrintIndent();
-  stream << "int id = bsg_x_y_to_id(__bsg_x, __bsg_y);\n\n";
-}
-
-std::vector<int> CodeGenCUDALite::PrintCUDALiteKernelLoop() {
-  std::vector<int> scope_id;
-
-  PrintIndent();
-  stream << "for (int iter_z = bsg_z; iter_z < k_blockDim_z; iter_z += BSG_TILE_GROUP_Z_DIM){\n";
-  scope_id.push_back( BeginScope() );
-  PrintIndent();
-  stream << "for (int iter_y = bsg_y; iter_y < k_blockDim_y; iter_y += BSG_TILE_GROUP_Y_DIM){\n";
-  scope_id.push_back( BeginScope() );
-  PrintIndent();
-  stream << "for (int iter_x = bsg_x; iter_x < k_blockDim_x; iter_x += BSG_TILE_GROUP_X_DIM){\n";
-  scope_id.push_back( BeginScope() );
-
-  return scope_id;
+  stream << "int id = bsg_x_y_to_id(__bsg_x, __bsg_y);\n";
+  stream << "int blockIdx_x = 0;\n\n";
 }
 
 void CodeGenCUDALite::PrintCUDALiteKernelLoopTail(std::vector<int> id) {
-  EndScope(id[0]);
-  PrintIndent();
-  stream << "}\n";
-  EndScope(id[1]);
-  PrintIndent();
-  stream << "}\n";
-  EndScope(id[2]);
-  PrintIndent();
-  stream << "}\n";
+  for (unsigned int i = 0; i < id.size(); i++){
+    EndScope(id[i]);
+    PrintIndent();
+    stream << "}\n";
+  }
 }
 
-void CodeGenCUDALite::PrintCUDALiteAKernelLoop() {
+std::vector<int>  CodeGenCUDALite::PrintCUDALiteOuterKernelLoop() {
+  std::vector<int> scope_id;
+
   PrintIndent();
-  // TODO remove this manually set part
-  stream << "for (int i = id; i < n; i += bsg_tiles_X*bsg_tiles_Y){\n";
-  //stream << "for (int i = id; i < 16; i += 4){\n";
-  stream << "\tC[i] = A[i] + B[i];\n";
-  PrintIndent();
-  stream << "}\n";
+  stream << "for (int iter_x = id; iter_x < n; iter_x += bsg_tiles_X*bsg_tiles_Y){\n";
+  scope_id.push_back( BeginScope() );
+
+  return scope_id;
 }
 
 void CodeGenCUDALite::PrintCUDALiteBarrier() {
@@ -136,12 +90,11 @@ void CodeGenCUDALite::VisitStmt_(const ir::AttrStmt* op) {
     cuda_lite_flag_ = true;
 
     PrintCUDALiteKernelHead();
-    //std::vector<int> scope_id = PrintCUDALiteKernelLoop();
+    std::vector<int> scope_id = PrintCUDALiteOuterKernelLoop();
 
-    //CodeGenC::VisitStmt_(op);
+    CodeGenC::VisitStmt_(op);
 
-    //PrintCUDALiteKernelLoopTail(scope_id);
-    PrintCUDALiteAKernelLoop();
+    PrintCUDALiteKernelLoopTail(scope_id);
     PrintCUDALiteBarrier();
 
     cuda_lite_flag_ = false;
