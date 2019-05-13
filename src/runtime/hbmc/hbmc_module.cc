@@ -190,8 +190,7 @@ class HBMCWrappedFunc {
   void operator()(TVMArgs args,
                   TVMRetValue* rv,
                   void** void_args) const {
-    //std::cout << "Call HBMCWrappedFunc operator()\n";
-    //LOG(INFO) << "args.num_args = " << args.num_args;
+    //std::cout << "args.num_args = " << args.num_args << std::endl;
 
     /*
     for (int i=0; i < args.num_args; i++) {
@@ -210,28 +209,35 @@ class HBMCWrappedFunc {
     }
     */
 
+    /*
     printf("kernel_args[0] = 0x%x\n", *(uint32_t*)void_args[0]);
     printf("kernel_args[1] = 0x%x\n", *(uint32_t*)void_args[1]);
     printf("kernel_args[2] = 0x%x\n", *(uint32_t*)void_args[2]);
     printf("kernel_args[2] = %d\n", *(int32_t*)void_args[3]);
+    */
 
-    //LOG(INFO) << "func_name_ = " << func_name_;
     char *local_f_name = new char [func_name_.length()+1];
     strcpy(local_f_name, func_name_.c_str());
 
     tile_t tiles[4];
-    uint32_t num_tiles = 4, num_tiles_x = 2, num_tiles_y = 2, origin_x = 0, origin_y = 1;
     /* 2 x 2 tile group at (0, 1) */
+    uint32_t num_tiles = 4, num_tiles_x = 2, num_tiles_y = 2, origin_x = 0, origin_y = 1;
     create_tile_group(tiles, num_tiles_x, num_tiles_y, origin_x, origin_y); 
 
+    // set the path for the binary
     char elf_path[m_->GetFilename().size() + 1];
     strcpy(elf_path, m_->GetFilename().c_str());
-    //std::cout << "elf_path = " << elf_path << std::endl;
-    // TODO automate this part, looks like it's always num of args minus 2?
-    uint32_t argv[4] = {*(uint32_t*)void_args[0], *(uint32_t*)void_args[1], *(uint32_t*)void_args[2],*(uint32_t*)void_args[3]};
+
+    // TODO Need to be AUTOMATED
+    // Now set to (num_args - 2), but when schedule is different, this will FAIL
+    int num_kernel_args = args.num_args - 2;
+    uint32_t *kernel_argv = new uint32_t[num_kernel_args];
+
+    for (int i = 0; i < num_kernel_args; i++)
+      kernel_argv[i] = *(uint32_t*)void_args[i];
 
     std::cout << "lunch kernel " << func_name_ << "() on hammerblade manycore"<< std::endl;
-    if (hb_mc_device_launch(0, 0, local_f_name, 4, argv, elf_path, tiles, num_tiles) != HB_MC_SUCCESS) {
+    if (hb_mc_device_launch(0, 0, local_f_name, 4, kernel_argv, elf_path, tiles, num_tiles) != HB_MC_SUCCESS) {
         LOG(FATAL) << "Unable to launch hbmc device code";
     }
     hb_mc_cuda_sync(0, &tiles[0]); /* if CUDA sync is correct, this program won't hang here. */
