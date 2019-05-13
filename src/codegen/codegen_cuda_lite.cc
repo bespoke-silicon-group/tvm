@@ -57,6 +57,7 @@ std::string CodeGenCUDALite::Finish() {
 void CodeGenCUDALite::PrintCUDALiteKernelHead() {
   PrintIndent();
   stream << "int id = bsg_x_y_to_id(__bsg_x, __bsg_y);\n";
+  PrintIndent();
   stream << "int blockIdx_x = 0;\n\n";
 }
 

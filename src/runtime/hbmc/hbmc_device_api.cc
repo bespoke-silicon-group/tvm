@@ -32,7 +32,8 @@ class HBMCDeviceAPI final : public DeviceAPI {
       eva_id_t eva_id = 0;
 
       std::cout << "Initializing HBMC device...\n";
-      char elf_path[] = "/home/centos/tvm-hb/tutorials/cuda_lite/myadd_kernel0.riscv";
+      //char elf_path[] = "/home/centos/tvm-hb/tutorials/cuda_lite/cuda_lite_kernel.riscv";
+      char elf_path[] = "cuda_lite_kernel.riscv";
       // TODO hb_mc_init_device(should not take binary as input)
       if (hb_mc_init_device(ctx.device_id, eva_id, elf_path, &tiles[0], num_tiles) != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize device.";
