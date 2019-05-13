@@ -19,10 +19,13 @@ tgt_host="llvm"
 # Use cuda_litr or hbmc to generate code for hammerblade
 tgt="cuda_lite"
 
+dtype = "int32"
+
 n = tvm.var("n")
-A = tvm.placeholder((n,), name='A')
-B = tvm.placeholder((n,), name='B')
-C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
+k = tvm.reduce_axis((0, n), "k")
+A = tvm.placeholder((n, ), dtype=dtype, name='A')
+B = tvm.placeholder((n, ), dtype=dtype, name='B')
+C = tvm.compute((1, ), lambda i: tvm.sum(A[k] * B[k], axis=k), name="C")
 
 s = tvm.create_schedule(C.op)
 bx, tx = s[C].split(C.op.axis[0], factor=64)
@@ -31,22 +34,22 @@ if tgt == "cuda_lite" or tgt == "hbmc":
   s[C].bind(bx, tvm.thread_axis("blockIdx.x"))
   s[C].bind(tx, tvm.thread_axis("threadIdx.x"))
 
-fadd = tvm.build(s, [A, B, C], tgt, target_host=tgt_host, name="myadd")
+fdot = tvm.build(s, [A, B, C], tgt, target_host=tgt_host, name="mydot")
 
-if tgt == "cuda_lite" or tgt.startswith('opencl'):
-    dev_module = fadd.imported_modules[0]
+if tgt == "cuda_lite":
+    dev_module = fdot.imported_modules[0]
     print("-----CUDA Lite code-----")
     print(dev_module.get_source())
 
-#ctx = tvm.context(tgt, 0)
+ctx = tvm.context(tgt, 0)
 #
 n = 32
 a = tvm.nd.array(np.random.randint(10, size=n).astype(A.dtype), ctx)
 print(a)
 b = tvm.nd.array(np.random.randint(10, size=n).astype(B.dtype), ctx)
 print(b)
-c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
-fadd(a, b, c)
+c = tvm.nd.array(np.zeros(1, dtype=C.dtype), ctx)
+fdot(a, b, c)
 print(c)
-tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())
+tvm.testing.assert_allclose(c.asnumpy(), sum(a.asnumpy()*b.asnumpy()))
 
