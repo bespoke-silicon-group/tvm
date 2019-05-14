@@ -42,7 +42,7 @@ if tgt == "cuda_lite" or tgt.startswith('opencl'):
 
 ctx = tvm.context(tgt, 0)
 
-n = 32
+n = 8
 a = tvm.nd.array(np.random.randint(10, size=n).astype(A.dtype), ctx)
 print(a)
 b = tvm.nd.array(np.random.randint(10, size=n).astype(B.dtype), ctx)

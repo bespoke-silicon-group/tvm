@@ -245,7 +245,9 @@ class HBMCWrappedFunc {
     uint8_t tg_dim_x = 2;
     uint8_t tg_dim_y = 2;
 
-    hb_mc_grid_init (&HBMC_DEVICE_, grid_size, tg_dim_x, tg_dim_y, local_f_name, num_kernel_args, kernel_argv);
+    if (hb_mc_grid_init (&HBMC_DEVICE_, grid_size, tg_dim_x, tg_dim_y, local_f_name, 
+                         num_kernel_args, kernel_argv) != HB_MC_SUCCESS)
+      LOG(FATAL) << "Unable to init grid on manycore";
     if (hb_mc_device_tile_groups_execute(&HBMC_DEVICE_) != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to launch hbmc device code";
 
