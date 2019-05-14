@@ -64,11 +64,16 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   cmd = cmd + "-o " + out_name + " " + compiler_misc + " " + compiler_l;
   LOG(INFO) << cmd;
   // compile the kernel object code
-  if (system(cmd.c_str()) != 0)
-    LOG(FATAL) << "Error while linking CUDA-Lite code";
+  //if (system(cmd.c_str()) != 0)
+    //LOG(FATAL) << "Error while linking CUDA-Lite code";
 
   // TODO Chage to return module with loaded binary
   return codegen::DeviceSourceModuleCreate(code, "cuda-lite", ExtractFuncInfo(funcs), "cuda-lite");
+
+  //std::string data;
+  //runtime::LoadBinaryFromFile(out_name, &data);
+
+  //return HBMCModuleCreate(data, "riscv", ExtractFuncInfo(funcs), code.c_str(), out_name);
 
   /*
   if (const auto* f = Registry::Get("tvm_callback_cuda_postproc")) {
