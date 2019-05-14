@@ -13,6 +13,7 @@
 #include <mutex>
 
 #include <bsg_manycore_driver.h>
+#include <bsg_manycore_tile.h>
 #include <bsg_manycore_mem.h>
 #include <bsg_manycore_loader.h>
 #include <bsg_manycore_errno.h>
@@ -222,7 +223,7 @@ class HBMCWrappedFunc {
     tile_t tiles[4];
     /* 2 x 2 tile group at (0, 1) */
     uint32_t num_tiles = 4, num_tiles_x = 2, num_tiles_y = 2, origin_x = 0, origin_y = 1;
-    create_tile_group(tiles, num_tiles_x, num_tiles_y, origin_x, origin_y); 
+    //create_tile_group(tiles, num_tiles_x, num_tiles_y, origin_x, origin_y); 
 
     // set the path for the binary
     char elf_path[m_->GetFilename().size() + 1];
@@ -237,10 +238,18 @@ class HBMCWrappedFunc {
       kernel_argv[i] = *(uint32_t*)void_args[i];
 
     std::cout << "lunch kernel " << func_name_ << "() on hammerblade manycore"<< std::endl;
-    if (hb_mc_device_launch(0, 0, local_f_name, 4, kernel_argv, elf_path, tiles, num_tiles) != HB_MC_SUCCESS) {
-        LOG(FATAL) << "Unable to launch hbmc device code";
-    }
-    hb_mc_cuda_sync(0, &tiles[0]); /* if CUDA sync is correct, this program won't hang here. */
+    //if (hb_mc_device_launch(0, 0, local_f_name, 4, kernel_argv, elf_path, tiles, num_tiles) != HB_MC_SUCCESS)
+        //LOG(FATAL) << "Unable to launch hbmc device code";
+        
+    uint8_t grid_size = 4;
+    uint8_t tg_dim_x = 2;
+    uint8_t tg_dim_y = 2;
+
+    hb_mc_grid_init (&HBMC_DEVICE_, grid_size, tg_dim_x, tg_dim_y, local_f_name, num_kernel_args, kernel_argv);
+    if (hb_mc_device_tile_groups_execute(&HBMC_DEVICE_) != HB_MC_SUCCESS)
+      LOG(FATAL) << "Unable to launch hbmc device code";
+
+    //hb_mc_cuda_sync(0, &tiles[0]); /* if CUDA sync is correct, this program won't hang here. */
   }
 
  private:

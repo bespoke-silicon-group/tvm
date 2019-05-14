@@ -6,7 +6,13 @@
 #include <tvm/runtime/device_api.h>
 #include <dmlc/thread_local.h>
 #include <tvm/runtime/registry.h>
+
 #include <bsg_manycore_driver.h>
+#include <bsg_manycore_tile.h>
+#include <bsg_manycore_mem.h>
+#include <bsg_manycore_loader.h>
+#include <bsg_manycore_errno.h>
+#include <bsg_manycore_cuda.h>
 
 #include "hbmc_common.h"
 
@@ -20,13 +26,14 @@ class HBMCDeviceAPI final : public DeviceAPI {
   }
   void SetDevice(TVMContext ctx) final {
     if (init_flag == false) {
+      /*
       std::cout << "Call HBMCDeviceAPI::SetDevice(), Initializing HBMC host...\n";
       hb_mc_init_host((uint8_t*)&(ctx.device_id));
       //LOG(INFO) << "ctx.device_id: " << ctx.device_id;
 
       tile_t tiles[4];
       uint32_t num_tiles = 4, num_tiles_x = 2, num_tiles_y = 2, origin_x = 0, origin_y = 1;
-      /* 2 x 2 tile group at (0, 1) */
+      // 2 x 2 tile group at (0, 1) 
       create_tile_group(tiles, num_tiles_x, num_tiles_y, origin_x, origin_y); 
 
       eva_id_t eva_id = 0;
@@ -37,6 +44,22 @@ class HBMCDeviceAPI final : public DeviceAPI {
       // TODO hb_mc_init_device(should not take binary as input)
       if (hb_mc_init_device(ctx.device_id, eva_id, elf_path, &tiles[0], num_tiles) != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize device.";
+      */
+
+      uint8_t mesh_dim_x = 4;
+      uint8_t mesh_dim_y = 4;
+      uint8_t mesh_origin_x = 0;
+      uint8_t mesh_origin_y = 1;
+      eva_id_t eva_id = 0;
+      char elf_path[] = "cuda_lite_kernel.riscv";
+
+      std::cout << "Initializing HBMC device...\n";
+      // TODO the device info should be passed to ctx
+      if (hb_mc_device_init(&HBMC_DEVICE_, eva_id, elf_path, mesh_dim_x, mesh_dim_y, 
+          mesh_origin_x, mesh_origin_y) != HB_MC_SUCCESS)
+        LOG(FATAL) << "could not initialize device.";
+      ctx.device_id = HBMC_DEVICE_.fd;
+      LOG(INFO) << "ctx.device_id: " << ctx.device_id;
 
       init_flag = true;
     }
@@ -51,6 +74,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
                        size_t alignment,
                        TVMType type_hint) final {
     //std::cout << "Call HBMCDeviceAPI::AllocDataSpace()\n";
+    // TODO do this when TVM setup the context
     HBMCDeviceAPI::SetDevice(ctx);
 
     /*
@@ -59,22 +83,26 @@ class HBMCDeviceAPI final : public DeviceAPI {
     std::cout << ", " << ctx.device_id << ")" << std::endl;
     */
 
-    eva_id_t eva_id = 0; // set eva_id to zero to make malloc func work
-
     eva_t ptr;
-    hb_mc_device_malloc(eva_id, nbytes, &ptr);
-    printf("allocate FPGA memory at addr: 0x%x\n", ptr);
+    if (init_flag == true) {
+      hb_mc_device_malloc(&HBMC_DEVICE_, nbytes, &ptr);
+      printf("allocate FPGA memory at addr: 0x%x\n", ptr);
+    }
+    else
+      LOG(FATAL) << "You should init hbmc device first";
 
     return (void*) ptr;
   }
 
   void FreeDataSpace(TVMContext ctx, void* ptr) final {
     //std::cout << "Call HBMCDeviceAPI::FreeDataSpace()\n";
-    printf("free FPGA memory at addr: 0x%x\n", reinterpret_cast<uint32_t*>(ptr));
-
-    eva_id_t eva_id = 0; // set eva_id to zero to make malloc func work
-    hb_mc_device_free(eva_id, static_cast<uint32_t>(
-                              reinterpret_cast<std::uintptr_t>(ptr)));
+    if (init_flag == true) {
+      printf("free FPGA memory at addr: 0x%x\n", reinterpret_cast<uint32_t*>(ptr));
+      hb_mc_device_free(&HBMC_DEVICE_, static_cast<uint32_t>(
+                                      reinterpret_cast<std::uintptr_t>(ptr)));
+    }
+    else
+      LOG(FATAL) << "You should init hbmc device first";
   }
 
   void CopyDataFromTo(const void* from,
@@ -97,33 +125,36 @@ class HBMCDeviceAPI final : public DeviceAPI {
     std::cout << ", " << ctx_to.device_id << ")" << std::endl;
     */
 
-    if (ctx_from.device_type == kDLCPU) {
-      printf("copy from host mem addr: 0x%x ", 
-              reinterpret_cast<uint64_t*>((void*) from));
-      printf("to fpga mem addr: 0x%x, ", reinterpret_cast<uint32_t*>(to));
-      printf("size %d\n", size);
-      if (hb_mc_device_memcpy(ctx_to.device_id, (eva_id_t) 0, to, 
-          from, size, hb_mc_memcpy_to_device) != HB_MC_SUCCESS)
-        LOG(FATAL) << "Unable to memcpy from host to hbmc device.";
+    if (init_flag == true) {
+      if (ctx_from.device_type == kDLCPU) {
+        printf("copy from host mem addr: 0x%x ", reinterpret_cast<uint64_t*>((void*) from));
+        printf("to fpga mem addr: 0x%x, ", reinterpret_cast<uint32_t*>(to));
+        printf("size %d\n", size);
+        if (hb_mc_device_memcpy(&HBMC_DEVICE_, to, 
+            from, size, hb_mc_memcpy_to_device) != HB_MC_SUCCESS)
+          LOG(FATAL) << "Unable to memcpy from host to hbmc device.";
 
-      int32_t *arr = static_cast<int32_t*>((void*)from);
-      /*
-      printf("from[0:8]: ");
-      for (int i = 0; i < 8; i++)
-        printf("%d ", arr[i]); 
-      printf("\n");
-      */
-    }
-    else {
-      printf("copy from fpga mem addr: 0x%x ", 
-              reinterpret_cast<uint64_t*>((void*) from));
-      printf("to host mem addr: 0x%x, ", reinterpret_cast<uint32_t*>(to));
-      printf("size %d\n", size);
+        /*
+        int32_t *arr = static_cast<int32_t*>((void*)from);
+        printf("from[0:8]: ");
+        for (int i = 0; i < 8; i++)
+          printf("%d ", arr[i]); 
+        printf("\n");
+        */
+      }
+      else {
+        printf("copy from fpga mem addr: 0x%x ", 
+                reinterpret_cast<uint64_t*>((void*) from));
+        printf("to host mem addr: 0x%x, ", reinterpret_cast<uint32_t*>(to));
+        printf("size %d\n", size);
 
-      if (hb_mc_device_memcpy(ctx_to.device_id, (eva_id_t) 0, to, 
-          from, size, hb_mc_memcpy_to_host) != HB_MC_SUCCESS)
-        LOG(FATAL) << "Could not do memory copy from host to hbmc device.";
+        if (hb_mc_device_memcpy(&HBMC_DEVICE_, to, 
+            from, size, hb_mc_memcpy_to_host) != HB_MC_SUCCESS)
+          LOG(FATAL) << "Could not do memory copy from host to hbmc device.";
+      }
     }
+    else
+      LOG(FATAL) << "You should init hbmc device first";
   }
 
   void StreamSync(TVMContext ctx, TVMStreamHandle stream) final {
@@ -134,6 +165,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
   }
 
   void FreeWorkspace(TVMContext ctx, void* data) final {
+    hb_mc_device_finish(&HBMC_DEVICE_); /* freeze the tiles and memory manager cleanup */
     HBMCThreadEntry::ThreadLocal()->pool.FreeWorkspace(ctx, data);
   }
 

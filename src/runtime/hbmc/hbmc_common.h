@@ -9,6 +9,7 @@
 #include <tvm/runtime/packed_func.h>
 #include <string>
 #include "../workspace_pool.h"
+#include <bsg_manycore_cuda.h>
 
 namespace tvm {
 namespace runtime {
@@ -45,6 +46,8 @@ class HBMCThreadEntry {
   // get the threadlocal workspace
   static HBMCThreadEntry* ThreadLocal();
 };
+
+static device_t HBMC_DEVICE_;
 }  // namespace runtime
 }  // namespace tvm
 #endif  // TVM_RUNTIME_HBMC_HBMC_COMMON_H_
