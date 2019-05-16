@@ -47,7 +47,7 @@ class HBMCThreadEntry {
   static HBMCThreadEntry* ThreadLocal();
 };
 
-static device_t HBMC_DEVICE_;
+extern device_t HBMC_DEVICE_;
 }  // namespace runtime
 }  // namespace tvm
 #endif  // TVM_RUNTIME_HBMC_HBMC_COMMON_H_

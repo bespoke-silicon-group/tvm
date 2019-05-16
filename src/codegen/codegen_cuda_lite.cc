@@ -55,17 +55,21 @@ std::string CodeGenCUDALite::Finish() {
 }
 
 void CodeGenCUDALite::PrintCUDALiteKernelHead() {
-  PrintIndent();
-  stream << "int id = __bsg_tile_group_id * __bsg_grid_size + __bsg_id;\n";
-  PrintIndent();
-  stream << "int block_size = n / (__bsg_grid_size * bsg_tiles_X * bsg_tiles_Y);\n";
+  //PrintIndent();
+  //stream << "int id = __bsg_tile_group_id * __bsg_grid_size + __bsg_id;\n";
+  //PrintIndent();
+  //stream << "int block_size = n / (__bsg_grid_size * bsg_tiles_X * bsg_tiles_Y);\n";
   //stream << "int blockIdx_x = 0;\n\n";
+  //PrintIndent();
+  //stream << "for (int i = id*block_size; i < (id+1)*block_size; i++) {\n";
+  //PrintIndent();
+  //stream << "C[id] = A[id] + B[id];\n";
+  //PrintIndent();
+  //stream << "}\n";
   PrintIndent();
-  stream << "for (int i = id*block_size; i < (id+1)*block_size; i++) {\n";
+  stream << "int blockIdx_x = __bsg_tile_group_id;\n";
   PrintIndent();
-  stream << "C[i] = A[i] + B[i];\n";
-  PrintIndent();
-  stream << "}\n";
+  stream << "int threadIdx_x = __bsg_id;\n\n";
 }
 
 void CodeGenCUDALite::PrintCUDALiteKernelLoopTail(std::vector<int> id) {
@@ -100,7 +104,7 @@ void CodeGenCUDALite::VisitStmt_(const ir::AttrStmt* op) {
     PrintCUDALiteKernelHead();
     //std::vector<int> scope_id = PrintCUDALiteOuterKernelLoop();
 
-    //CodeGenC::VisitStmt_(op);
+    CodeGenC::VisitStmt_(op);
 
     //PrintCUDALiteKernelLoopTail(scope_id);
     //PrintCUDALiteBarrier();
@@ -124,11 +128,11 @@ void CodeGenCUDALite::BindThreadIndex(const IterVar& iv) {
   CHECK(!var_idmap_.count(iv->var.get()));
   LOG(INFO) << iv->thread_tag;
   std::string tmp_thread_tag = iv->thread_tag;
-  std::string tmp_str = "iter";
+  //std::string tmp_str = "iter";
   tmp_thread_tag[tmp_thread_tag.length()-2] = '_';
-  std::size_t found = tmp_thread_tag.find("threadIdx");
-  if (found!=std::string::npos)
-    tmp_thread_tag.replace(tmp_thread_tag.begin(), tmp_thread_tag.end() - 2, tmp_str);  
+  //std::size_t found = tmp_thread_tag.find("threadIdx");
+  //if (found!=std::string::npos)
+    //tmp_thread_tag.replace(tmp_thread_tag.begin(), tmp_thread_tag.end() - 2, tmp_str);  
   var_idmap_[iv->var.get()] =
       //CastFromTo(iv->thread_tag, UInt(32), iv->var.type());
       CastFromTo(tmp_thread_tag, UInt(32), iv->var.type());

@@ -27,6 +27,7 @@
 namespace tvm {
 namespace runtime {
 
+device_t HBMC_DEVICE_;
 // Module to support thread-safe multi-GPU execution.
 // cuModule is a per-GPU module
 // The runtime will contain a per-device module table
@@ -210,19 +211,19 @@ class HBMCWrappedFunc {
     }
     */
 
-    /*
+    ///*
     printf("kernel_args[0] = 0x%x\n", *(uint32_t*)void_args[0]);
     printf("kernel_args[1] = 0x%x\n", *(uint32_t*)void_args[1]);
     printf("kernel_args[2] = 0x%x\n", *(uint32_t*)void_args[2]);
     printf("kernel_args[2] = %d\n", *(int32_t*)void_args[3]);
-    */
+    //*/
 
     char *local_f_name = new char [func_name_.length()+1];
     strcpy(local_f_name, func_name_.c_str());
 
-    tile_t tiles[4];
+    //tile_t tiles[4];
     /* 2 x 2 tile group at (0, 1) */
-    uint32_t num_tiles = 4, num_tiles_x = 2, num_tiles_y = 2, origin_x = 0, origin_y = 1;
+    //uint32_t num_tiles = 4, num_tiles_x = 2, num_tiles_y = 2, origin_x = 0, origin_y = 1;
     //create_tile_group(tiles, num_tiles_x, num_tiles_y, origin_x, origin_y); 
 
     // set the path for the binary
@@ -245,6 +246,7 @@ class HBMCWrappedFunc {
     uint8_t tg_dim_x = 2;
     uint8_t tg_dim_y = 2;
 
+    HBMC_DEVICE_.elf = elf_path;
     if (hb_mc_grid_init (&HBMC_DEVICE_, grid_size, tg_dim_x, tg_dim_y, local_f_name, 
                          num_kernel_args, kernel_argv) != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to init grid on manycore";

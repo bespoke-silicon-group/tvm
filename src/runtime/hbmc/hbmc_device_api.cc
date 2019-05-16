@@ -19,6 +19,7 @@
 namespace tvm {
 namespace runtime {
 
+//extern device_t HBMC_DEVICE_;
 class HBMCDeviceAPI final : public DeviceAPI {
  public:
   HBMCDeviceAPI() {
@@ -60,6 +61,10 @@ class HBMCDeviceAPI final : public DeviceAPI {
         LOG(FATAL) << "could not initialize device.";
       ctx.device_id = HBMC_DEVICE_.fd;
       LOG(INFO) << "ctx.device_id: " << ctx.device_id;
+
+      std::cout << "mesh->origin_x = " << (HBMC_DEVICE_.mesh)->origin_x << std::endl;
+      std::cout << "mesh->origin_y = " << (HBMC_DEVICE_.mesh)->origin_y << std::endl;
+      std::cout << "elf_path = " << HBMC_DEVICE_.elf << std::endl;
 
       init_flag = true;
     }

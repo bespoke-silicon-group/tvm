@@ -27,7 +27,7 @@ B = tvm.placeholder((n,), dtype=dtype, name='B')
 C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
 
 s = tvm.create_schedule(C.op)
-bx, tx = s[C].split(C.op.axis[0], factor=64)
+bx, tx = s[C].split(C.op.axis[0], factor=4)
 
 if tgt == "cuda_lite" or tgt == "hbmc":
   s[C].bind(bx, tvm.thread_axis("blockIdx.x"))
@@ -42,7 +42,7 @@ if tgt == "cuda_lite" or tgt.startswith('opencl'):
 
 ctx = tvm.context(tgt, 0)
 
-n = 8
+n = 16
 a = tvm.nd.array(np.random.randint(10, size=n).astype(A.dtype), ctx)
 print(a)
 b = tvm.nd.array(np.random.randint(10, size=n).astype(B.dtype), ctx)
