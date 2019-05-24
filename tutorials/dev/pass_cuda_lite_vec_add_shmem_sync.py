@@ -9,118 +9,156 @@ import numpy as np
 n = tvm.const(128, "int32")
 A = tvm.placeholder((n, ), name="A")
 B = tvm.placeholder((n, ), name="B")
+max_thds = 32
+num_thds = 4
 
 ##### Creating vector addition IR for regular GPU computation #####
 def gpu_vec_add_ir_shmem(A, B, C):
-    max_threads = 32
     ib = tvm.ir_builder.create()
 
-    with ib.new_scope():
-        AA = ib.allocate("float32", 32, name="AA", scope="local")
-        BB = ib.allocate("float32", 32, name="BB", scope="local")
-        CC = ib.allocate("float32", 32, name="CC", scope="local")
+    bx = tvm.thread_axis("blockIdx.x")
+    tx = tvm.thread_axis("threadIdx.x")
 
-        bx = tvm.thread_axis("blockIdx.x")
-        tx = tvm.thread_axis("threadIdx.x")
+    ib.scope_attr(bx, "thread_extent", (n+max_thds-1)//max_thds)
+    ib.scope_attr(tx, "thread_extent", max_thds)
 
-        ib.scope_attr(bx, "thread_extent", (n+max_threads-1)//max_threads)
-        ib.scope_attr(tx, "thread_extent", max_threads)
+    AA = ib.allocate("float32", max_thds, name="AA", scope="shared")
+    BB = ib.allocate("float32", max_thds, name="BB", scope="shared")
 
-        Aptr = ib.buffer_ptr(A)
-        Bptr = ib.buffer_ptr(B)
-        Cptr = ib.buffer_ptr(C)
+    Aptr = ib.buffer_ptr(A)
+    Bptr = ib.buffer_ptr(B)
+    Cptr = ib.buffer_ptr(C)
 
-        idx = bx.var * max_threads + tx.var
-
-        with ib.if_scope(ib.likely(idx<n)):
-            AA[tx.var] = Aptr[idx]
-            BB[tx.var] = Bptr[idx]
-            CC[tx.var] = AA[tx.var] + BB[tx.var]
-
-            Cptr[idx] = CC[tx.var] 
+    idx = bx.var * max_thds + tx.var
+    with ib.if_scope(ib.likely(idx<n)):
+        AA[tx.var] = Aptr[idx]
+        BB[tx.var] = Bptr[idx]
+        ib.emit(tvm.make.Call(None, 'tvm_storage_sync',
+                              tvm.convert(['shared']),
+                              tvm.expr.Call.Intrinsic, None, 0))
+        Cptr[idx] = AA[tx.var] + BB[tx.var]
 
     body = ib.get()
+    print(body)
     return body
 
+print("Original IR")
 C = tvm.extern(A.shape, [A, B], lambda inps, outs: gpu_vec_add_ir_shmem(inps[0], inps[1], outs[0]), 
                name="vec_add", dtype="float32")
 
 s = tvm.create_schedule(C.op)
-bounds = tvm.schedule.InferBound(s)
-stmt = tvm.schedule.ScheduleOps(s, bounds)
+#bounds = tvm.schedule.InferBound(s)
+#stmt = tvm.schedule.ScheduleOps(s, bounds)
 ir  = tvm.lower(s, [A, B, C], simple_mode=True)
-print("Original IR")
-print(ir)
+#print(ir)
 #exit()
 
 threads = []
-def find_thread4(op):
+def find_thread_loop_point(op):
     if isinstance(op, tvm.stmt.AttrStmt):
         if op.attr_key == "thread_extent" and str(op.node.var) == "threadIdx.x":
-            if op.value.value > 4:
+            if op.value.value > num_thds:
                 threads.append(op)
 
 ##### IR Transformation for manycore usage #####
-def loopify4(op):
-    """ Add a thread loop for the tasks found in `find_thread4`. """
+tx_num = None
+li = tvm.var('i')
+
+src_idx = tvm.var()
+tar_idx = tvm.var()
+def substitute_index(op):
+    if isinstance(op.index, tvm.expr.Var):
+        if str(op.index) == str(src_idx):
+            body = tvm.ir_pass.Substitute(op, {op.index: tar_idx})
+            return body
+    if isinstance(op.index, tvm.expr.Add):
+        if str(op.index.a) == str(src_idx):
+            body = tvm.ir_pass.Substitute(op, {op.index.a: tar_idx})
+            return body
+        if str(op.index.b) == str(src_idx):
+            body = tvm.ir_pass.Substitute(op, {op.index.b: tar_idx})
+            return body
+    return None
+
+def inject_for_on_leaf_stmt(op):
+    if isinstance(op, tvm.stmt.Stmt):
+        # the Evaluate and Store are the only two types of leaf stmt nodes
+        if isinstance(op, tvm.stmt.Store):
+            body = tvm.make.For(li, 0, max_thds // num_thds, tvm.stmt.For.Serial, 0, op)
+            body = tvm.ir_pass.IRTransform(body, None, substitute_index, ['Store'])
+            return body
+
+    return None
+
+def merge_for_loops(op):
+    if isinstance(op.first, tvm.stmt.For):
+        for0 = op.first
+        
+        if isinstance(op.rest, tvm.stmt.Block):
+            if isinstance(op.rest.first, tvm.stmt.For):
+                for1 = op.rest.first
+                # the two loops are the same
+                if (for0.loop_var == for1.loop_var
+                   and int(for0.min) == int(for1.min)
+                   and int(for0.extent) == int(for1.extent)):
+
+                    body = tvm.make.Block(for0.body, for1.body)
+                    body = tvm.make.For(for0.loop_var, for0.min, for0.extent, for0.for_type,
+                                        for0.device_api, body)
+                    body = tvm.make.Block(body, op.rest.rest)
+                    return body
+    return None
+
+def inject_for_loop(op):
+    global src_idx
+    global tar_idx
+
     if op in threads:
-        tx_num = op.value.value
-        li = tvm.var('i')
-        if isinstance(op.body, tvm.stmt.Store):
-            body = tvm.ir_pass.Substitute(op, {op.body.index.b: op.body.index.b*(tx_num//4) + li})
-            r_body = tvm.make.For(li, 0, tx_num // 4, tvm.stmt.For.Serial, 0, body)
-        if isinstance(op.body, tvm.stmt.Block):
-            blist = tvm.make.stmt_list(op.body)
-            r_body = None
-            # create expr for sync
-            sync_expr = tvm.make.Call(None, 'tvm_storage_sync', 
-                                      tvm.convert(['shared']), 
-                                      tvm.expr.Call.Intrinsic, None, 0)
-            # make it a stmt, and can be put into stmt.body
-            sync = tvm.make.Evaluate(sync_expr)
+        if isinstance(op, tvm.stmt.AttrStmt):
+            if op.attr_key == "thread_extent" and str(op.node.var) == "threadIdx.x":
+                src_idx = op.node.var
+                tar_idx = src_idx*(max_thds//num_thds) + li
 
-            for b in blist: 
-                if isinstance(b, tvm.stmt.Store):
-                    if isinstance(b.index, tvm.expr.Var):
-                        body = tvm.ir_pass.Substitute(b, {b.index: b.index*(tx_num//4) + li})
-                        body = tvm.make.For(li, 0, tx_num // 4, tvm.stmt.For.Serial, 0, body)
-                        r_body = body if r_body is None else tvm.make.Block(r_body, body)
-                        r_body = tvm.make.Block(r_body, sync)
-                    if isinstance(b.index, tvm.expr.Add):
-                        body = tvm.ir_pass.Substitute(b, {b.index.b: b.index.b*(tx_num//4) + li})
-                        body = tvm.make.For(li, 0, tx_num // 4, tvm.stmt.For.Serial, 0, body)
-                        r_body = body if r_body is None else tvm.make.Block(r_body, body)
-                        r_body = tvm.make.Block(r_body, sync)
-
-        r_op = tvm.make.AttrStmt(op.node, op.attr_key, op.value, r_body)
-        return r_op
+                body = tvm.ir_pass.IRTraverse(op.body, None, inject_for_on_leaf_stmt)
+                stmt = tvm.make.AttrStmt(op.node, op.attr_key, tvm.const(num_thds, "int32"), body)
+                return stmt
     return None
 
 def thread_loop(stmt):
     global threads
+    global head_stmt
+    global tail_stmt
 
-    tvm.ir_pass.PostOrderVisit(stmt, find_thread4)
-    #exit()
+    tvm.ir_pass.PostOrderVisit(stmt, find_thread_loop_point)
 
     if not threads:
         return stmt
 
-    stmt = tvm.ir_pass.IRTransform(stmt, None, loopify4, ['AttrStmt'])
+    stmt = tvm.ir_pass.IRTransform(stmt, None, inject_for_loop, ['AttrStmt'])
+    print("Inject for loops")
+    print(stmt)
+
+    stmt = tvm.ir_pass.IRTransform(stmt, None, merge_for_loops, ['Block'])
+    print("Merge for loops")
+    print(stmt)
+    #exit()
+    #stmt = tvm.ir_pass.IRTransform(stmt, None, loopify4, ['AttrStmt'])
 
     return stmt
 
 print("Transformed IR")
-print(thread_loop(ir))
-#exit()
+#print(thread_loop(ir))
 
 with tvm.build_config(add_lower_pass=[(1, thread_loop)]) as cfg:
     #print(tvm.lower(s, [A, B, C], simple_mode=True))
     f = tvm.lower(s, [A, B, C], simple_mode=False)
+#exit()
 
+#f = tvm.lower(s, [A, B, C], simple_mode=False)
 tgt = 'cuda'
 
 fadd = tvm.build(f, target=tgt)
-print("Generated Code")
+print("Generated CUDA Code")
 print(fadd.imported_modules[0].get_source())
 exit()
 
