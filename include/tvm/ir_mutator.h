@@ -139,6 +139,10 @@ Stmt IRTransform(const Stmt& node,
                  const runtime::PackedFunc& preorder,
                  const runtime::PackedFunc& postorder,
                  const Array<Expr>& only_enable = {});
+
+Stmt IRTraverse(const Stmt& node,
+                const runtime::PackedFunc& preorder,
+                const runtime::PackedFunc& postorder);
 }  // namespace ir
 }  // namespace tvm
 #endif  // TVM_IR_MUTATOR_H_

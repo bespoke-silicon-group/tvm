@@ -70,6 +70,45 @@ class IRTransformer final : public IRMutator {
   const std::unordered_set<uint32_t>& only_enable_;
 };
 
+class IRTraverser final : public IRMutator {
+ public:
+  IRTraverser(const runtime::PackedFunc& f_preorder,
+              const runtime::PackedFunc& f_postorder)
+      : f_preorder_(f_preorder),
+        f_postorder_(f_postorder) {
+  }
+  Stmt Mutate(Stmt stmt) final {
+    return MutateInternal<Stmt>(stmt);
+  }
+  Expr Mutate(Expr expr) final {
+    return MutateInternal<Expr>(expr);
+  }
+
+ private:
+  template<typename T>
+  T MutateInternal(T node) {
+    /*
+    if (only_enable_.size() &&
+        !only_enable_.count(node->type_index())) {
+      return IRMutator::Mutate(node);
+    }
+    */
+    if (f_preorder_ != nullptr) {
+      T pre = f_preorder_(node);
+      if (pre.defined()) return pre;
+    }
+    node = IRMutator::Mutate(node);
+    if (f_postorder_ != nullptr) {
+      T post = f_postorder_(node);
+      if (post.defined()) return post;
+    }
+    return node;
+  }
+  // The functions
+  const runtime::PackedFunc& f_preorder_;
+  const runtime::PackedFunc& f_postorder_;
+};
+
 Stmt IRTransform(const Stmt& ir_node,
                  const runtime::PackedFunc& f_preorder,
                  const runtime::PackedFunc& f_postorder,
@@ -80,6 +119,16 @@ Stmt IRTransform(const Stmt& ir_node,
   }
   return IRTransformer(f_preorder, f_postorder, only_type_index)
       .Mutate(ir_node);
+}
+
+Stmt IRTraverse(const Stmt& ir_node,
+                const runtime::PackedFunc& f_preorder,
+                const runtime::PackedFunc& f_postorder) {
+  //std::unordered_set<uint32_t> only_type_index;
+  //for (Expr s : only_enable) {
+    //only_type_index.insert(Node::TypeKey2Index(s.as<StringImm>()->value.c_str()));
+  //}
+  return IRTraverser(f_preorder, f_postorder).Mutate(ir_node);
 }
 
 IRMutator::FMutateExpr& IRMutator::vtable_expr() {  // NOLINT(*)
