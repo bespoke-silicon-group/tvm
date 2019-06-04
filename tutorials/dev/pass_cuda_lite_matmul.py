@@ -54,6 +54,8 @@ s = tvm.create_schedule(C.op)
 #stmt = tvm.schedule.ScheduleOps(s, bounds)
 ir  = tvm.lower(s, [A, B, C], simple_mode=True)
 print(ir)
+with open('matmul_ir.c', 'w') as f:
+    f.write(str(ir))
 
 tar_threads = 2
 loop_points = []
@@ -193,7 +195,9 @@ def thread_loop(stmt):
 #print(thread_loop(ir))
 
 with tvm.build_config(add_lower_pass=[(1, thread_loop)]) as cfg:
-    #print(tvm.lower(s, [A, B, C], simple_mode=True))
+    tr_ir = tvm.lower(s, [A, B, C], simple_mode=True)
+    with open('tr_matmul_ir.c', 'w') as f:
+        f.write(str(tr_ir))
     f = tvm.lower(s, [A, B, C], simple_mode=False)
 #exit()
 
@@ -202,7 +206,10 @@ tgt = 'cuda'
 
 fmatmul = tvm.build(f, target=tgt, name='matmul')
 print("Generated CUDA Code")
-print(fmatmul.imported_modules[0].get_source())
+code = fmatmul.imported_modules[0].get_source()
+print(code)
+with open('matmul.cu', 'w') as f:
+    f.write(code)
 #exit()
 
 ctx = tvm.context(tgt, 0)
