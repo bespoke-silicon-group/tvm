@@ -28,9 +28,9 @@ def gpu_tile_matmul_ir(A, B, C):
     ib.scope_attr(ty, "thread_extent", max_threads)
     ib.scope_attr(tx, "thread_extent", max_threads)
 
-    CL = ib.allocate("float32", scale*scale, name="CC", scope="local")
-    AA = ib.allocate("float32", n, name="AA", scope="shared")
-    BB = ib.allocate("float32", n, name="BB", scope="shared")
+    CC = ib.allocate("float32", pow(scale*max_threads, 2), name="CC", scope="shared")
+    AA = ib.allocate("float32", pow(max_threads, 2)*scale, name="AA", scope="shared")
+    BB = ib.allocate("float32", pow(max_threads, 2)*scale, name="BB", scope="shared")
 
     Aptr = ib.buffer_ptr(A)
     Bptr = ib.buffer_ptr(B)
@@ -42,7 +42,9 @@ def gpu_tile_matmul_ir(A, B, C):
     with ib.new_scope():
         with ib.for_range(0, scale, name="ii.c.init") as i:
             with ib.for_range(0, scale, name="jj.c.init") as j:
-                CL[i*scale + j] = 0.0
+                i_y = ty*scale + i
+                i_x = tx*scale + j
+                CC[i_y*scale*max_threads + i_x] = 0.0
 
         with ib.for_range(0, n//scale, name="k.outer") as k_out:
             ib.emit(tvm.make.Call(None, 'tvm_storage_sync', tvm.convert(['shared']), tvm.expr.Call.Intrinsic, None, 0))
@@ -66,13 +68,17 @@ def gpu_tile_matmul_ir(A, B, C):
             with ib.for_range(0, scale, name="k.inner") as k_in:
                 with ib.for_range(0, scale, name="ii.c") as ii:
                     with ib.for_range(0, scale, name="jj.c") as jj:
-                        CL[ii*scale + jj] = CL[ii*scale + jj] + (AA[ty*block_factor + ii*scale + k_in] * BB[k_in*block_factor + tx*scale + jj])
+                        i_y = ty*scale + ii
+                        i_x = tx*scale + jj
+                        CC[i_y*scale*max_threads + i_x] = CC[i_y*scale*max_threads + i_x] + (AA[ty*block_factor + ii*scale + k_in] * BB[k_in*block_factor + tx*scale + jj])
 
     with ib.for_range(0, scale, name="ii.inner.inner") as ii:
         with ib.for_range(0, scale, name="jj.inner.inner") as jj:
             glb_y = start_y + ty*scale + ii 
             glb_x = start_x + tx*scale + jj
-            Cptr[glb_y*n + glb_x] = CL[ii*scale + jj]
+            i_y = ty*scale + ii
+            i_x = tx*scale + jj
+            Cptr[glb_y*n + glb_x] = CC[i_y*scale*max_threads + i_x]
 
     body = ib.get()
     #print(body)
