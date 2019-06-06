@@ -47,6 +47,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
         LOG(FATAL) << "could not initialize device.";
       */
 
+      /*
       uint8_t mesh_dim_x = 4;
       uint8_t mesh_dim_y = 4;
       uint8_t mesh_origin_x = 0;
@@ -65,6 +66,19 @@ class HBMCDeviceAPI final : public DeviceAPI {
       std::cout << "mesh->origin_x = " << (HBMC_DEVICE_.mesh)->origin_x << std::endl;
       std::cout << "mesh->origin_y = " << (HBMC_DEVICE_.mesh)->origin_y << std::endl;
       std::cout << "elf_path = " << HBMC_DEVICE_.elf << std::endl;
+      */
+
+      device_t device;
+      char elf_path[] = "cuda_lite_kernel.riscv";
+      hb_mc_dimension_t mesh_dim = { .x = 4, .y = 4 }; 
+      if (hb_mc_device_init(&HBMC_DEVICE_, "tvm_hb", 0, mesh_dim) != HB_MC_SUCCESS)
+        LOG(FATAL) << "could not initialize device.";
+      
+      ctx.device_id = HBMC_DEVICE_.fd;
+
+      //char* elf = BSG_STRINGIFY(BSG_MANYCORE_DIR) "/software/spmd/bsg_cuda_lite_runtime" "/vec_add/main.riscv";
+      if (hb_mc_device_program_init(&HBMC_DEVICE_, elf_path, "tvm_hb", 0) != HB_MC_SUCCESS)
+        LOG(FATAL) << "could not initialize program.";
 
       init_flag = true;
     }

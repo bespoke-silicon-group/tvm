@@ -211,12 +211,12 @@ class HBMCWrappedFunc {
     }
     */
 
-    ///*
+    /*
     printf("kernel_args[0] = 0x%x\n", *(uint32_t*)void_args[0]);
     printf("kernel_args[1] = 0x%x\n", *(uint32_t*)void_args[1]);
     printf("kernel_args[2] = 0x%x\n", *(uint32_t*)void_args[2]);
     printf("kernel_args[2] = %d\n", *(int32_t*)void_args[3]);
-    //*/
+    */
 
     char *local_f_name = new char [func_name_.length()+1];
     strcpy(local_f_name, func_name_.c_str());
@@ -242,6 +242,13 @@ class HBMCWrappedFunc {
     //if (hb_mc_device_launch(0, 0, local_f_name, 4, kernel_argv, elf_path, tiles, num_tiles) != HB_MC_SUCCESS)
         //LOG(FATAL) << "Unable to launch hbmc device code";
         
+    hb_mc_dimension_t tg_dim = { .x = 2, .y = 2}; 
+    hb_mc_dimension_t grid_dim = { .x = 4, .y = 1}; 
+    if (hb_mc_grid_init(&HBMC_DEVICE_, grid_dim, tg_dim, local_f_name, num_kernel_args, kernel_argv) 
+        != HB_MC_SUCCESS)
+      LOG(FATAL) << "Unable to init grid on manycore";
+        
+    /*
     uint8_t grid_size = 4;
     uint8_t tg_dim_x = 2;
     uint8_t tg_dim_y = 2;
@@ -250,6 +257,7 @@ class HBMCWrappedFunc {
     if (hb_mc_grid_init (&HBMC_DEVICE_, grid_size, tg_dim_x, tg_dim_y, local_f_name, 
                          num_kernel_args, kernel_argv) != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to init grid on manycore";
+    */
     if (hb_mc_device_tile_groups_execute(&HBMC_DEVICE_) != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to launch hbmc device code";
 
