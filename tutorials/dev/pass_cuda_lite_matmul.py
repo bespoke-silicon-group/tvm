@@ -6,13 +6,13 @@ import numpy as np
 # We first write a very simple vector add and build it with the default schedule. Then, we use
 # our customized lowering pass to manipulate the IR directly instead of using schedule primitives.
 #
-n = tvm.const(64, "int32")
-A = tvm.placeholder((n, n), name="A")
-B = tvm.placeholder((n, n), name="B")
+dtype = 'int32'
+n = tvm.const(32, "int32")
+A = tvm.placeholder((n, n), name="A", dtype=dtype)
+B = tvm.placeholder((n, n), name="B", dtype=dtype)
 scale = 4
 max_threads = 4
 block_factor = scale*max_threads
-dtype = 'float32'
 
 ##### Creating vector addition IR for regular GPU computation #####
 def gpu_matmul_ir(A, B, C):
@@ -36,7 +36,7 @@ def gpu_matmul_ir(A, B, C):
         with ib.for_range(0, scale, name="j.inner.inner") as j:
             idx_y = by*16 + ty*4 + i
             idx_x = bx*16 + tx*4 + j
-            Cptr[idx_y*n + idx_x] = 0.0
+            Cptr[idx_y*n + idx_x] = 0
             with ib.for_range(0, n, name="k") as k:
                 Cptr[idx_y*n + idx_x] = Cptr[idx_y*n + idx_x] + \
                             (Aptr[idx_y*n + k]*Bptr[k*n + idx_x])
@@ -47,7 +47,7 @@ def gpu_matmul_ir(A, B, C):
 
 print("Original IR")
 C = tvm.extern(A.shape, [A, B], lambda inps, outs: 
-    gpu_matmul_ir(inps[0], inps[1], outs[0]), name="matmul", dtype="float32")
+    gpu_matmul_ir(inps[0], inps[1], outs[0]), name="matmul", dtype=dtype)
 
 s = tvm.create_schedule(C.op)
 #bounds = tvm.schedule.InferBound(s)
@@ -202,27 +202,32 @@ with tvm.build_config(add_lower_pass=[(1, thread_loop)]) as cfg:
 #exit()
 
 # f = tvm.lower(s, [A, B, C], simple_mode=False)
-tgt = 'cuda'
+tgt = 'cuda_lite'
 
 fmatmul = tvm.build(f, target=tgt, name='matmul')
-print("Generated CUDA Code")
+print("Generated CUDA-Lite Code")
 code = fmatmul.imported_modules[0].get_source()
 print(code)
-with open('matmul.cu', 'w') as f:
-    f.write(code)
+#with open('matmul.cu', 'w') as f:
+    #f.write(code)
 #exit()
 
 ctx = tvm.context(tgt, 0)
 
-n = 64
-a_np = np.random.rand(n, n).astype(dtype)
-b_np = np.random.rand(n, n).astype(dtype)
-c_np = np.zeros((n, n), dtype=dtype)
+n = 32
+#a_np = np.random.rand(n, n).astype(dtype)
+a_np = np.random.randint(5, size=(n ,n)).astype(dtype)
+#b_np = np.random.rand(n, n).astype(dtype)
+b_np = np.random.randint(5, size=(n ,n)).astype(dtype)
+c_np = np.zeros((n, n), dtype=C.dtype)
 
 a = tvm.nd.array(a_np, ctx)
 b = tvm.nd.array(b_np, ctx)
 c = tvm.nd.array(c_np, ctx)
+#exit()
 fmatmul(a, b, c)
+c_dev = c.asnumpy()
+#exit()
 ans = np.dot(a.asnumpy(), b.asnumpy())
 err = tvm.testing.assert_allclose(c.asnumpy(), ans, rtol=1e-5)
 if not err:

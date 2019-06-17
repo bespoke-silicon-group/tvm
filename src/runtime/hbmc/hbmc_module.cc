@@ -218,6 +218,7 @@ class HBMCWrappedFunc {
     printf("kernel_args[2] = %d\n", *(int32_t*)void_args[3]);
     */
 
+    std::cout << "call back to operator()\n";
     char *local_f_name = new char [func_name_.length()+1];
     strcpy(local_f_name, func_name_.c_str());
 
@@ -232,7 +233,7 @@ class HBMCWrappedFunc {
 
     // TODO Need to be AUTOMATED
     // Now set to (num_args - 2), but when schedule is different, this will FAIL
-    int num_kernel_args = args.num_args - 2;
+    int num_kernel_args = 3;
     uint32_t *kernel_argv = new uint32_t[num_kernel_args];
 
     for (int i = 0; i < num_kernel_args; i++)
@@ -243,7 +244,8 @@ class HBMCWrappedFunc {
         //LOG(FATAL) << "Unable to launch hbmc device code";
         
     hb_mc_dimension_t tg_dim = { .x = 2, .y = 2}; 
-    hb_mc_dimension_t grid_dim = { .x = 4, .y = 1}; 
+    hb_mc_dimension_t grid_dim = { .x = 2, .y = 2}; 
+    std::cout << "going to call hb_mc_grid_init()\n";
     if (hb_mc_grid_init(&HBMC_DEVICE_, grid_dim, tg_dim, local_f_name, num_kernel_args, kernel_argv) 
         != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to init grid on manycore";
@@ -258,6 +260,7 @@ class HBMCWrappedFunc {
                          num_kernel_args, kernel_argv) != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to init grid on manycore";
     */
+    std::cout << "going to call hb_mc_device_tile_groups_execute()\n";
     if (hb_mc_device_tile_groups_execute(&HBMC_DEVICE_) != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to launch hbmc device code";
 

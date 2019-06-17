@@ -6,13 +6,13 @@ import numpy as np
 # We first write a very simple vector add and build it with the default schedule. Then, we use
 # our customized lowering pass to manipulate the IR directly instead of using schedule primitives.
 #
-n = tvm.const(128, "int32")
+n = tvm.const(32, "int32")
 A = tvm.placeholder((n, ), name="A")
 B = tvm.placeholder((n, ), name="B")
 
 ##### Creating vector addition IR for regular GPU computation #####
 def gpu_vec_add_ir(A, B, C):
-    max_threads = 32
+    max_threads = 8
     ib = tvm.ir_builder.create()
 
     bx = tvm.thread_axis("blockIdx.x")
@@ -81,7 +81,19 @@ with tvm.build_config(add_lower_pass=[(1, thread_loop)]) as cfg:
     #print(tvm.lower(s, [A, B, C], simple_mode=True))
     f = tvm.lower(s, [A, B, C], simple_mode=False)
 
-fadd = tvm.build(f, target='cuda')
+fadd = tvm.build(f, target='cuda_lite', name="myadd")
 print("Generated Code")
 print(fadd.imported_modules[0].get_source())
+#exit()
 
+ctx = tvm.context("cuda_lite", 0)
+
+n = 32
+a = tvm.nd.array(np.random.randint(10, size=n).astype(A.dtype), ctx)
+#print(a)
+b = tvm.nd.array(np.random.randint(10, size=n).astype(B.dtype), ctx)
+#print(b)
+c = tvm.nd.array(np.zeros(n, dtype=C.dtype), ctx)
+fadd(a, b, c)
+#print(c)
+tvm.testing.assert_allclose(c.asnumpy(), a.asnumpy() + b.asnumpy())

@@ -69,7 +69,11 @@ void CodeGenCUDALite::PrintCUDALiteKernelHead() {
   PrintIndent();
   stream << "int blockIdx_x = __bsg_tile_group_id_x;\n";
   PrintIndent();
-  stream << "int threadIdx_x = __bsg_id;\n\n";
+  stream << "int blockIdx_y = __bsg_tile_group_id_y;\n";
+  PrintIndent();
+  stream << "int threadIdx_x = __bsg_x;\n";
+  PrintIndent();
+  stream << "int threadIdx_y = __bsg_y;\n\n";
 }
 
 void CodeGenCUDALite::PrintCUDALiteKernelLoopTail(std::vector<int> id) {
