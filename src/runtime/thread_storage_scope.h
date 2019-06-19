@@ -202,6 +202,10 @@ class ThreadAxisConfig {
   size_t work_dim() const {
     return work_dim_;
   }
+  // return the base
+  size_t base() const {
+    return base_;
+  }
 
  private:
   /*! \brief base axis */
