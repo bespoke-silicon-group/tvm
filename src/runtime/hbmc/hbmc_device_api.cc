@@ -68,7 +68,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
       std::cout << "elf_path = " << HBMC_DEVICE_.elf << std::endl;
       */
 
-      device_t device;
+      hb_mc_device_t device;
       char elf_path[] = "cuda_lite_kernel.riscv";
       hb_mc_dimension_t mesh_dim = { .x = 4, .y = 4 }; 
       if (hb_mc_device_init(&HBMC_DEVICE_, "tvm_hb", 0, mesh_dim) != HB_MC_SUCCESS)
@@ -150,7 +150,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
         printf("to fpga mem addr: 0x%x, ", reinterpret_cast<uint32_t*>(to));
         printf("size %d\n", size);
         if (hb_mc_device_memcpy(&HBMC_DEVICE_, to, 
-            from, size, hb_mc_memcpy_to_device) != HB_MC_SUCCESS)
+            from, size, HB_MC_MEMCPY_TO_DEVICE) != HB_MC_SUCCESS)
           LOG(FATAL) << "Unable to memcpy from host to hbmc device.";
 
         /*
@@ -168,7 +168,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
         printf("size %d\n", size);
 
         if (hb_mc_device_memcpy(&HBMC_DEVICE_, to, 
-            from, size, hb_mc_memcpy_to_host) != HB_MC_SUCCESS)
+            from, size, HB_MC_MEMCPY_TO_HOST) != HB_MC_SUCCESS)
           LOG(FATAL) << "Could not do memory copy from host to hbmc device.";
       }
     }

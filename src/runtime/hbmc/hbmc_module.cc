@@ -27,7 +27,7 @@
 namespace tvm {
 namespace runtime {
 
-device_t HBMC_DEVICE_;
+hb_mc_device_t HBMC_DEVICE_;
 // Module to support thread-safe multi-GPU execution.
 // cuModule is a per-GPU module
 // The runtime will contain a per-device module table

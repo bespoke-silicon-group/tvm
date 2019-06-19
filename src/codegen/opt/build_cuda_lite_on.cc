@@ -37,10 +37,10 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   std::string file_name_prefix = "cuda_lite_kernel";
   runtime::SaveBinaryToFile(file_name_prefix + ".c", code.c_str());
 
-  std::string compiler = "/home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/riscv-tools/riscv-install/bin/riscv32-unknown-elf-gcc";
+  std::string compiler = "/home/centos/bsg_manycore/software/riscv-tools/riscv-install/bin/riscv32-unknown-elf-gcc";
   std::string flags = "-march=rv32ima -static -std=gnu99 -ffast-math -fno-common -fno-builtin-printf";
-  std::string includes = "-I/home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/spmd/common/";
-  includes += " -I/home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/bsg_manycore_lib";
+  std::string includes = "-I/home/centos/bsg_manycore/software/spmd/common/";
+  includes += " -I/home/centos/bsg_manycore/software/bsg_manycore_lib";
   std::string dynamics = "-Dbsg_tiles_X=2 -Dbsg_tiles_Y=2 -Dbsg_global_X=4 -Dbsg_global_Y=4 -Dbsg_group_size=4 -O2 -DPREALLOCATE=0 -DHOST_DEBUG=0";
 
   std::string cmd = compiler + " " + flags + " " + includes + " " + dynamics;
@@ -55,9 +55,9 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   std::string main_o = "/home/centos/tvm-hb/tutorials/cuda_lite/main.o";
   std::string set_o = "/home/centos/tvm-hb/tutorials/cuda_lite/bsg_set_tile_x_y.o";
 
-  std::string compiler_t = "-T /home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/spmd/common/test.ld";
-  std::string compiler_w = "-Wl,--defsym,bsg_group_size=4";
-  std::string compiler_l = "-lc -lgcc -L /home/centos/bsg_bladerunner/bsg_manycore_3903da0/software/spmd/common";
+  std::string compiler_t = "-t -T /home/centos/bsg_manycore/software/spmd/common/link_dmem.ld";
+  std::string compiler_w = "-Wl,--defsym,bsg_group_size=4 -Wl,--no-check-sections";
+  std::string compiler_l = "-lc -lgcc -l:crt.o -L /home/centos/bsg_manycore/software/spmd/common";
   std::string compiler_misc = "-march=rv32ima -nostdlib -nostartfiles -ffast-math";
   std::string out_name = file_name_prefix + ".riscv";
 
