@@ -30,7 +30,11 @@ Module HBMCModuleCreate(
     std::string data,
     std::string fmt,
     std::unordered_map<std::string, FunctionInfo> fmap,
-    std::string hbmc_source);
+    std::string hbmc_source,
+    std::string file_name);
+
+Module HBMCModuleLoadFile(const std::string& file_name,
+                          const std::string& format);
 }  // namespace runtime
 }  // namespace tvm
 #endif  // TVM_RUNTIME_HB_HB_MODULE_H_

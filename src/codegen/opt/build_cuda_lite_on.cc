@@ -14,6 +14,9 @@
 #include "../codegen_cuda_lite.h"
 #include "../build_common.h"
 #include "../../runtime/file_util.h"
+#include "../../runtime/meta_data.h"
+#include "../../runtime/hbmc/hbmc_common.h"
+#include "../../runtime/hbmc/hbmc_module.h"
 
 namespace tvm {
 namespace codegen {
