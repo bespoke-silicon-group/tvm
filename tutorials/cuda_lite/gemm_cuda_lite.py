@@ -16,7 +16,7 @@ import numpy as np
 # Global declarations of environment.
 dtype = 'int32'
 
-M = 32
+M = 16
 
 n = tvm.var("n")
 #A = tvm.placeholder((n,), dtype=dtype, name='A')
