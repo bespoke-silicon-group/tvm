@@ -35,7 +35,7 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   if (const auto* f = Registry::Get("tvm_callback_cuda_lite_postproc")) {
     code = (*f)(code).operator std::string();
   }
-  std::cout << code;
+  //LOG(INFO) << code;
 
   std::string file_name_prefix = "cuda_lite_kernel";
   runtime::SaveBinaryToFile(file_name_prefix + ".c", code.c_str());

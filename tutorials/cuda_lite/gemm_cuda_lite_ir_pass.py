@@ -65,7 +65,7 @@ if tgt == "cuda_lite" or tgt.startswith('opencl'):
     dev_module = func.imported_modules[0]
     print("-----CUDA Lite code-----")
     print(dev_module.get_source())
-exit()
+#exit()
 
 ctx = tvm.context(tgt, 0)
 

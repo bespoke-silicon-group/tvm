@@ -20,9 +20,6 @@ class CodeGenCUDALite final : public CodeGenC {
   void Init(bool output_ssa);
   void AddFunction(LoweredFunc f);
   void PrintCUDALiteKernelHead();
-  void PrintCUDALiteKernelLoopTail(std::vector<int> id);
-  std::vector<int> PrintCUDALiteOuterKernelLoop();
-  void PrintCUDALiteBarrier();
   std::string Finish();
   bool need_include_path() { return (enable_fp16_ || enable_int8_); }
   // override behavior

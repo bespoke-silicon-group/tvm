@@ -29,20 +29,14 @@ void CodeGenCUDALite::AddFunction(LoweredFunc f) {
   //this->stream << "extern \"C\" __global__ ";
   //this->stream << "__attribute__";
   CodeGenC::AddFunction(f);
-  LOG(INFO) << f->body;
+  //LOG(INFO) << f->body;
 }
 
 std::string CodeGenCUDALite::Finish() {
   decl_stream << "#include \"bsg_manycore.h\"\n";
   decl_stream << "#include \"bsg_set_tile_x_y.h\"\n";
 
-  //decl_stream << "#define BSG_TILE_GROUP_X_DIM bsg_tiles_X\n";
-  //decl_stream << "#define BSG_TILE_GROUP_Y_DIM bsg_tiles_Y\n";
-
-  //decl_stream << "#include \"bsg_tile_group_barrier.h\"\n";
-  //decl_stream << "INIT_TILE_GROUP_BARRIER (r_barrier, c_barrier, 0, bsg_tiles_X-1, 0, bsg_tiles_Y-1)\n";
-
-
+  /*
   if (enable_fp16_) {
     decl_stream << "#include <cuda_fp16.h>\n";
   }
@@ -50,22 +44,12 @@ std::string CodeGenCUDALite::Finish() {
   if (enable_int8_) {
     decl_stream << "#include <sm_61_intrinsics.h>\n";
   }
+  */
 
   return CodeGenC::Finish();
 }
 
 void CodeGenCUDALite::PrintCUDALiteKernelHead() {
-  //PrintIndent();
-  //stream << "int id = __bsg_tile_group_id * __bsg_grid_size + __bsg_id;\n";
-  //PrintIndent();
-  //stream << "int block_size = n / (__bsg_grid_size * bsg_tiles_X * bsg_tiles_Y);\n";
-  //stream << "int blockIdx_x = 0;\n\n";
-  //PrintIndent();
-  //stream << "for (int i = id*block_size; i < (id+1)*block_size; i++) {\n";
-  //PrintIndent();
-  //stream << "C[id] = A[id] + B[id];\n";
-  //PrintIndent();
-  //stream << "}\n";
   PrintIndent();
   stream << "int blockIdx_x = __bsg_tile_group_id_x;\n";
   PrintIndent();
@@ -76,42 +60,13 @@ void CodeGenCUDALite::PrintCUDALiteKernelHead() {
   stream << "int threadIdx_y = __bsg_y;\n\n";
 }
 
-void CodeGenCUDALite::PrintCUDALiteKernelLoopTail(std::vector<int> id) {
-  for (unsigned int i = 0; i < id.size(); i++){
-    EndScope(id[i]);
-    PrintIndent();
-    stream << "}\n";
-  }
-}
-
-std::vector<int>  CodeGenCUDALite::PrintCUDALiteOuterKernelLoop() {
-  std::vector<int> scope_id;
-
-  PrintIndent();
-  stream << "for (int iter_x = id; iter_x < n; iter_x += bsg_tiles_X*bsg_tiles_Y){\n";
-  scope_id.push_back( BeginScope() );
-
-  return scope_id;
-}
-
-void CodeGenCUDALite::PrintCUDALiteBarrier() {
-  stream << std::endl;
-  PrintIndent();
-  stream << "bsg_tile_group_barrier(&r_barrier, &c_barrier);"
-         << std::endl;
-}
-
 void CodeGenCUDALite::VisitStmt_(const ir::AttrStmt* op) {
   if (!cuda_lite_flag_) {
     cuda_lite_flag_ = true;
 
     PrintCUDALiteKernelHead();
-    //std::vector<int> scope_id = PrintCUDALiteOuterKernelLoop();
 
     CodeGenC::VisitStmt_(op);
-
-    //PrintCUDALiteKernelLoopTail(scope_id);
-    //PrintCUDALiteBarrier();
 
     cuda_lite_flag_ = false;
   }
