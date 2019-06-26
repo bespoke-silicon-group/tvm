@@ -20,11 +20,7 @@ dtype = 'int32'
 
 M = 32
 
-n = tvm.var("n")
-#A = tvm.placeholder((n,), dtype=dtype, name='A')
-#B = tvm.placeholder((n,), dtype=dtype, name='B')
-#C = tvm.compute(A.shape, lambda i: A[i] + B[i], name="C")
-
+#n = tvm.var("n")
 k = tvm.reduce_axis((0, M), 'k')
 A = tvm.placeholder((M, M), name="A", dtype=dtype)
 B = tvm.placeholder((M, M), name="B", dtype=dtype)
@@ -61,6 +57,7 @@ tgt_host="llvm"
 # Use cuda_litr or hbmc to generate code for hammerblade
 tgt="cuda_lite"
 
+# Build the hammerblade module with ir pass for cuda lite
 with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
     func = tvm.build(s, [A, B, C], tgt, target_host=tgt_host, name="cuda_lite_gemm")
 
@@ -69,7 +66,6 @@ if tgt == "cuda_lite" or tgt.startswith('opencl'):
     print("-----CUDA Lite code-----")
     print(dev_module.get_source())
 exit()
-
 
 ctx = tvm.context(tgt, 0)
 

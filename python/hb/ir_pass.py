@@ -46,7 +46,8 @@ def inject_thread_loop(stmt):
         if isinstance(op, tvm.stmt.Stmt):
             # the Evaluate and Store are the only two types of leaf stmt nodes
             if isinstance(op, tvm.stmt.Store):
-                body = tvm.make.For(loop_var, 0, ori_threads//tar_threads, tvm.stmt.For.Serial, 0, op)
+                body = tvm.make.For(loop_var, 0, ori_threads//tar_threads, tvm.stmt.For.Serial, 
+                                    0, op)
                 body = tvm.ir_pass.IRTransform(body, None, substitute_index, ['Store'])
                 return body
         return None
@@ -55,6 +56,8 @@ def inject_thread_loop(stmt):
     def inject_for_loop(op):
         nonlocal ori_threads
         nonlocal loop_var
+        nonlocal thread_var
+        nonlocal src_idx
         nonlocal tar_idx
 
         if isinstance(op, tvm.stmt.AttrStmt):
