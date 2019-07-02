@@ -80,4 +80,4 @@ func(a, b, c)
 ans = np.dot(a.asnumpy(), b.asnumpy())
 err = tvm.testing.assert_allclose(c.asnumpy(), ans, rtol=1e-5)
 if not err:
-    print("The resutls of matrix multiplication are correct.")
+    print("The matrix multiplication results are the same as numpy.")
