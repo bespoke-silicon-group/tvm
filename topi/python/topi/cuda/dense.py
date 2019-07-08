@@ -27,8 +27,9 @@ from .. import generic
 from ..util import traverse_inline, get_const_tuple
 
 
-@autotvm.register_topi_compute(dense, ["cuda", "gpu"], "direct")
+@autotvm.register_topi_compute(dense, ["cuda", "gpu", "cuda_lite"], "direct")
 def dense_cuda(cfg, data, weight, bias=None, out_dtype=None):
+    print("Call dense_cuda()")
     """Dense operator for cuda backend.
 
     Parameters
@@ -68,8 +69,9 @@ def dense_cuda(cfg, data, weight, bias=None, out_dtype=None):
     return dense_default(data, weight, bias, out_dtype)
 
 
-@autotvm.register_topi_schedule(generic.schedule_dense, ["cuda", "gpu"], "direct")
+@autotvm.register_topi_schedule(generic.schedule_dense, ["cuda", "gpu", "cuda_lite"], "direct")
 def schedule_dense(cfg, outs):
+    print("Call schedule_dense()")
     """Schedule for dense operator.
 
     Parameters

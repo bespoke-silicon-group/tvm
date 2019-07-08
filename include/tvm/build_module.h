@@ -142,6 +142,10 @@ TVM_DLL Target llvm(const std::vector<std::string>& options =
 TVM_DLL Target cuda(const std::vector<std::string>& options =
                    std::vector<std::string>());
 
+/*! \return A target for CUDA */
+TVM_DLL Target cuda_lite(const std::vector<std::string>& options =
+                   std::vector<std::string>());
+
 /*! \return A target for ROCm */
 TVM_DLL Target rocm(const std::vector<std::string>& options =
                    std::vector<std::string>());

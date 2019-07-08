@@ -615,6 +615,16 @@ TVM_REGISTER_GLOBAL("topi.cuda.schedule_softmax")
   *rv = topi::cuda::schedule_softmax(args[0], args[1]);
   });
 
+TVM_REGISTER_GLOBAL("topi.cuda_lite.schedule_softmax")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = topi::cuda::schedule_softmax(args[0], args[1]);
+  });
+
+TVM_REGISTER_GLOBAL("topi.hbmc.schedule_softmax")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = topi::cuda::schedule_softmax(args[0], args[1]);
+  });
+
 TVM_REGISTER_GLOBAL("topi.cuda.schedule_lrn")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = topi::cuda::schedule_lrn(args[0], args[1]);
@@ -656,16 +666,16 @@ inline PackedFunc WrapSchedule(FTVMScheduleBuilder builder) {
 TVM_REGISTER_GENERIC_FUNC(schedule_injective)
 .set_default(WrapSchedule(topi::generic::schedule_injective))
 .register_func({ "cpu" }, WrapSchedule(topi::x86::schedule_injective))
-.register_func({ "cuda", "gpu" }, WrapSchedule(topi::cuda::schedule_injective));
+.register_func({ "cuda", "gpu", "cuda_lite" }, WrapSchedule(topi::cuda::schedule_injective));
 
 TVM_REGISTER_GENERIC_FUNC(schedule_softmax)
 .set_default(WrapSchedule(topi::generic::default_schedule))
 .register_func({ "cpu" }, WrapSchedule(topi::x86::default_schedule))
-.register_func({ "cuda", "gpu" }, WrapSchedule(topi::cuda::schedule_softmax));
+.register_func({ "cuda", "gpu", "cuda_lite" }, WrapSchedule(topi::cuda::schedule_softmax));
 
 TVM_REGISTER_GENERIC_FUNC(schedule_dense)
 .set_default(WrapSchedule(topi::generic::default_schedule))
-.register_func({ "cuda", "gpu" }, WrapSchedule(topi::cuda::schedule_dense))
+.register_func({ "cuda", "gpu", "cuda_lite" }, WrapSchedule(topi::cuda::schedule_dense))
 .register_func({ "rocm" }, WrapSchedule(topi::rocm::schedule_dense));
 
 TVM_REGISTER_GENERIC_FUNC(schedule_batch_matmul)
@@ -674,17 +684,17 @@ TVM_REGISTER_GENERIC_FUNC(schedule_batch_matmul)
 TVM_REGISTER_GENERIC_FUNC(schedule_pool)
 .set_default(WrapSchedule(topi::generic::default_schedule))
 .register_func({ "cpu" }, WrapSchedule(topi::x86::default_schedule))
-.register_func({ "cuda", "gpu" }, WrapSchedule(topi::cuda::schedule_pool));
+.register_func({ "cuda", "gpu", "cuda_lite" }, WrapSchedule(topi::cuda::schedule_pool));
 
 TVM_REGISTER_GENERIC_FUNC(schedule_global_pool)
 .set_default(WrapSchedule(topi::generic::default_schedule))
 .register_func({ "cpu" }, WrapSchedule(topi::x86::default_schedule))
-.register_func({ "cuda", "gpu" }, WrapSchedule(topi::cuda::schedule_global_pool));
+.register_func({ "cuda", "gpu", "cuda_lite" }, WrapSchedule(topi::cuda::schedule_global_pool));
 
 TVM_REGISTER_GENERIC_FUNC(schedule_reduce)
 .set_default(WrapSchedule(topi::generic::default_schedule_auto_inline))
 .register_func({ "cpu" }, WrapSchedule(topi::x86::default_schedule_auto_inline))
-.register_func({ "cuda", "gpu" }, WrapSchedule(topi::cuda::schedule_reduce));
+.register_func({ "cuda", "gpu", "cuda_lite" }, WrapSchedule(topi::cuda::schedule_reduce));
 
 TVM_REGISTER_GENERIC_FUNC(schedule_binarize_pack)
 .set_default(WrapSchedule(topi::generic::default_schedule))
@@ -730,7 +740,7 @@ TVM_REGISTER_GENERIC_FUNC(dense)
                             const Type& out_dtype) {
   return topi::nn::dense(data, weight, bias, out_dtype);
 }))
-.register_func({ "cuda", "gpu" }, WrapDenseOp(topi::cuda::dense_cuda))
+.register_func({ "cuda", "gpu", "cuda_lite" }, WrapDenseOp(topi::cuda::dense_cuda))
 .register_func({ "rocm" }, WrapDenseOp(topi::rocm::dense_rocm));
 
 }  // namespace topi

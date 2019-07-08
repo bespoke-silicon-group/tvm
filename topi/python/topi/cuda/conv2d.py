@@ -28,8 +28,9 @@ from .conv2d_winograd import winograd_cuda, schedule_winograd_cuda
 from .conv2d_int8 import conv2d_NCHWc_int8, schedule_conv2d_NCHWc_int8
 
 
-@autotvm.register_topi_compute(nn.conv2d, ['cuda', 'gpu'], ['direct', 'winograd', 'int8'])
+@autotvm.register_topi_compute(nn.conv2d, ['cuda', 'gpu', 'cuda_lite'], ['direct', 'winograd', 'int8'])
 def conv2d_cuda(cfg, data, kernel, strides, padding, dilation, layout='NCHW', out_dtype='float32'):
+    print("Call conv2d_cuda")
     """Conv2D operator for cuda backend.
 
     Parameters
@@ -116,7 +117,7 @@ def conv2d_cuda(cfg, data, kernel, strides, padding, dilation, layout='NCHW', ou
     raise ValueError("not support this layout {} yet".format(layout))
 
 
-@autotvm.register_topi_schedule(generic.schedule_conv2d_nchw, ["cuda", "gpu"],
+@autotvm.register_topi_schedule(generic.schedule_conv2d_nchw, ["cuda", "gpu", "cuda_lite"],
                                 ["direct", 'winograd', "int8"])
 def schedule_conv2d_nchw_cuda(cfg, outs):
     """TOPI schedule callback of conv2d for cuda gpu

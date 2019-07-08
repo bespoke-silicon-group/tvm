@@ -391,6 +391,20 @@ def cuda(model='unknown', options=None):
     return _api_internal._TargetCreate("cuda", *opts)
 
 
+def cuda_lite(model='unknown', options=None):
+    """Returns a cuda target.
+
+    Parameters
+    ----------
+    model: str
+        The model of cuda device (e.g. 1080ti)
+    options : str or list of str
+        Additional options
+    """
+    opts = _merge_opts(['-model=%s' % model], options)
+    return _api_internal._TargetCreate("cuda_lite", *opts)
+
+
 def rocm(model='unknown', options=None):
     """Returns a ROCM target.
 

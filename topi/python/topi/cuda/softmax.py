@@ -20,7 +20,7 @@ import tvm
 from .. import generic
 from .injective import _schedule_injective
 
-@generic.schedule_softmax.register(["cuda", "gpu"])
+@generic.schedule_softmax.register(["cuda", "gpu", "cuda_lite"])
 def schedule_softmax(outs):
     """Schedule for softmax op.
 
