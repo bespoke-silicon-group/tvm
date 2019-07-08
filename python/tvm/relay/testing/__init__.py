@@ -17,6 +17,8 @@
 """Utilities for testing and benchmarks"""
 from __future__ import absolute_import as _abs
 
+from . import dense
+from . import conv
 from . import mlp
 from . import resnet
 from . import dqn

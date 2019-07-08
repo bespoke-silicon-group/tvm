@@ -35,6 +35,14 @@ void CodeGenCUDALite::AddFunction(LoweredFunc f) {
 std::string CodeGenCUDALite::Finish() {
   decl_stream << "#include \"bsg_manycore.h\"\n";
   decl_stream << "#include \"bsg_set_tile_x_y.h\"\n";
+  decl_stream << "#include \"math.h\"\n";
+
+  decl_stream << "#define BSG_TILE_GROUP_X_DIM bsg_tiles_X\n";
+  decl_stream << "#define BSG_TILE_GROUP_Y_DIM bsg_tiles_Y\n";
+  decl_stream << "#include \"bsg_tile_group_barrier.h\"\n";
+
+  decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, bsg_tiles_X-1, \
+                  0, bsg_tiles_Y-1)";
 
   /*
   if (enable_fp16_) {
@@ -243,7 +251,8 @@ void CodeGenCUDALite::PrintStorageSync(const Call* op) {
     // DO nothing.
   } else if (sync == "shared") {
     this->PrintIndent();
-    this->stream << "__syncthreads();\n";
+    //this->stream << "__syncthreads();\n";
+    this->stream << "bsg_tile_group_barrier(&r_barrier, &c_barrier);\n";
   } else if (sync == "global") {
     if (!need_global_barrier_) {
       need_global_barrier_ = true;
@@ -282,7 +291,7 @@ void CodeGenCUDALite::PrintStorageScope(
     const std::string& scope, std::ostream& os) { // NOLINT(*)
   CHECK_NE(scope, "global");
   if (scope == "shared") {
-    os << "__shared__";
+    //os << "__shared__";
   }
 }
 

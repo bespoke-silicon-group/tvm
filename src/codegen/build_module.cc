@@ -128,6 +128,7 @@ Target CreateTarget(const std::string& target_name,
   } else if (target_name == "cuda_lite" || target_name == "hbmc") {
     t->device_type = kDLHBMC;
     t->keys_array.push_back(ir::StringImm::make("hbmc"));
+    t->keys_array.push_back(ir::StringImm::make("cuda_lite"));
   } else {
     LOG(ERROR) << "Unknown target name " << target_name;
     return target::stackvm();

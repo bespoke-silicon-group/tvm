@@ -22,6 +22,7 @@ namespace tvm {
 namespace codegen {
 
 runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
+  LOG(INFO);
   using tvm::runtime::Registry;
   bool output_ssa = false;
   CodeGenCUDALite cg;
@@ -60,7 +61,7 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
 
   std::string compiler_t = "-t -T /home/centos/bsg_manycore/software/spmd/common/link_dmem.ld";
   std::string compiler_w = "-Wl,--defsym,bsg_group_size=4 -Wl,--no-check-sections";
-  std::string compiler_l = "-lc -lgcc -l:crt.o -L /home/centos/bsg_manycore/software/spmd/common";
+  std::string compiler_l = "-lc -lgcc -lm -l:crt.o -L /home/centos/bsg_manycore/software/spmd/common";
   std::string compiler_misc = "-march=rv32ima -nostdlib -nostartfiles -ffast-math";
   std::string out_name = file_name_prefix + ".riscv";
 

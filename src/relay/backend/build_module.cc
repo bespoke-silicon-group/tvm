@@ -342,6 +342,7 @@ class RelayBuildModule : public runtime::ModuleNode {
     std::string name = runtime::DeviceName(device_type);
     if (name == "cpu") return Target::Create("llvm");
     if (name == "gpu") return Target::Create("cuda");
+    if (name == "cuda_lite") return Target::Create("cuda_lite");
     return Target::Create(name);
   }
 

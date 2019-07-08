@@ -36,6 +36,8 @@
 #include "../build_common.h"
 #include "../../runtime/cuda/cuda_common.h"
 #include "../../runtime/cuda/cuda_module.h"
+#include "../../runtime/file_util.h"
+#include "../../runtime/meta_data.h"
 
 
 namespace tvm {
@@ -142,6 +144,10 @@ runtime::Module BuildCUDA(Array<LoweredFunc> funcs) {
   if (const auto* f = Registry::Get("tvm_callback_cuda_postproc")) {
     code = (*f)(code).operator std::string();
   }
+
+  std::string file_name_prefix = "cuda_kernel";
+  runtime::SaveBinaryToFile(file_name_prefix + ".c", code.c_str());
+
   std::string fmt = "ptx";
   std::string ptx;
   if (const auto* f = Registry::Get("tvm_callback_cuda_compile")) {
