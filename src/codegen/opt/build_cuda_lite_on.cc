@@ -41,11 +41,12 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   std::string file_name_prefix = "cuda_lite_kernel";
   runtime::SaveBinaryToFile(file_name_prefix + ".c", code.c_str());
 
-  std::string compiler = "/home/centos/bsg_manycore/software/riscv-tools/riscv-install/bin/riscv32-unknown-elf-gcc";
-  std::string flags = "-march=rv32ima -static -std=gnu99 -ffast-math -fno-common -fno-builtin-printf";
-  std::string includes = "-I/home/centos/bsg_manycore/software/spmd/common/";
-  includes += " -I/home/centos/bsg_manycore/software/bsg_manycore_lib";
-  std::string dynamics = "-Dbsg_tiles_X=2 -Dbsg_tiles_Y=2 -Dbsg_global_X=4 -Dbsg_global_Y=4 -Dbsg_group_size=4 -O2 -DPREALLOCATE=0 -DHOST_DEBUG=0";
+  const std::string manycore_path = std::string(std::getenv("BSG_MANYCORE_DIR"));
+  std::string compiler = manycore_path + "/software/riscv-tools/riscv-install/bin/riscv32-unknown-elf-gcc";
+  std::string flags = "-march=rv32imaf -static -std=gnu99 -ffast-math -fno-common -ffp-contract=off";
+  std::string includes = "-I" + manycore_path + "/software/spmd/common/";
+  includes += " -I" + manycore_path + "/software/bsg_manycore_lib";
+  std::string dynamics = "-Dbsg_tiles_X=2 -Dbsg_tiles_Y=2 -Dbsg_global_X=4 -Dbsg_global_Y=4 -Dbsg_group_size=4 -mno-fdiv -O2 -DPREALLOCATE=0 -DHOST_DEBUG=0";
 
   std::string cmd = compiler + " " + flags + " " + includes + " " + dynamics;
   cmd += " -c " + file_name_prefix + ".c -o " + file_name_prefix + ".o";
@@ -56,16 +57,18 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
     LOG(FATAL) << "Error while compiling CUDA-Lite code";
 
   // linke the objects 
-  std::string main_o = "/home/centos/tvm-hb/tutorials/cuda_lite/main.o";
-  std::string set_o = "/home/centos/tvm-hb/tutorials/cuda_lite/bsg_set_tile_x_y.o";
+  const char* tvm_p = std::getenv("TVM_HOME");
+  std::string main_o = std::string(tvm_p) + "/tutorials/cuda_lite/main.o";
+  std::string set_o = std::string(tvm_p) + "/tutorials/cuda_lite/bsg_set_tile_x_y.o";
+  std::string printf_o = std::string(tvm_p) + "/tutorials/cuda_lite/bsg_printf.o";
 
-  std::string compiler_t = "-t -T /home/centos/bsg_manycore/software/spmd/common/link_dmem.ld";
-  std::string compiler_w = "-Wl,--defsym,bsg_group_size=4 -Wl,--no-check-sections";
-  std::string compiler_l = "-lc -lgcc -lm -l:crt.o -L /home/centos/bsg_manycore/software/spmd/common";
-  std::string compiler_misc = "-march=rv32ima -nostdlib -nostartfiles -ffast-math";
+  std::string compiler_t = "-t -T " + manycore_path +"/software/spmd/common/link_dmem2.ld";
+  std::string compiler_w = "-Wl,--defsym,bsg_group_size=4 -Wl,--defsym,_bsg_elf_dram_size=1207959552 -Wl,--defsym,_bsg_elf_vcache_size=294912 -Wl,--defsym,_bsg_elf_stack_ptr=0x00001ffc -Wl,--no-check-sections";
+  std::string compiler_misc = "-march=rv32imaf -nostdlib -nostartfiles -ffast-math";
+  std::string compiler_l = "-lc -lgcc -lm -l:crt.o -L " + manycore_path + "/software/spmd/common";
   std::string out_name = file_name_prefix + ".riscv";
 
-  cmd = compiler + " " + compiler_t + " " + compiler_w + " " + main_o + " " + set_o + " " + file_name_prefix + ".o ";
+  cmd = compiler + " " + compiler_t + " " + compiler_w + " " + main_o + " " + set_o + " " + printf_o + " " + file_name_prefix + ".o ";
   cmd = cmd + "-o " + out_name + " " + compiler_misc + " " + compiler_l;
   LOG(INFO) << cmd;
   // compile the kernel object code
