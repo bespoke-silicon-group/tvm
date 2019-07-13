@@ -7,9 +7,9 @@
 #include <dmlc/thread_local.h>
 #include <tvm/runtime/registry.h>
 
-#include <bsg_manycore_driver.h>
+//#include <bsg_manycore_driver.h>
 #include <bsg_manycore_tile.h>
-#include <bsg_manycore_mem.h>
+//#include <bsg_manycore_mem.h>
 #include <bsg_manycore_loader.h>
 #include <bsg_manycore_errno.h>
 #include <bsg_manycore_cuda.h>
@@ -70,11 +70,13 @@ class HBMCDeviceAPI final : public DeviceAPI {
 
       hb_mc_device_t device;
       char elf_path[] = "cuda_lite_kernel.riscv";
-      hb_mc_dimension_t mesh_dim = { .x = 4, .y = 4 }; 
-      if (hb_mc_device_init(&HBMC_DEVICE_, "tvm_hb", 0, mesh_dim) != HB_MC_SUCCESS)
+      //hb_mc_dimension_t mesh_dim = { .x = 4, .y = 4 }; 
+      //if (hb_mc_device_init(&HBMC_DEVICE_, "tvm_hb", 0, mesh_dim) != HB_MC_SUCCESS)
+        //LOG(FATAL) << "could not initialize device.";
+      if (hb_mc_device_init(&HBMC_DEVICE_, "tvm_hb", 0) != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize device.";
       
-      ctx.device_id = HBMC_DEVICE_.fd;
+      ctx.device_id = HBMC_DEVICE_.mc->id;
 
       //char* elf = BSG_STRINGIFY(BSG_MANYCORE_DIR) "/software/spmd/bsg_cuda_lite_runtime" "/vec_add/main.riscv";
       if (hb_mc_device_program_init(&HBMC_DEVICE_, elf_path, "tvm_hb", 0) != HB_MC_SUCCESS)
