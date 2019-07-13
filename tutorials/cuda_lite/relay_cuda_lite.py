@@ -63,7 +63,8 @@ from hb import ir_pass
 batch_size = 1
 num_class = 1000
 image_shape = (3, 224, 224)
-data_shape = (batch_size,) + image_shape
+#data_shape = (batch_size,) + image_shape
+data_shape = (batch_size, 4)
 out_shape = (batch_size, num_class)
 
 net, params = relay.testing.dense.get_workload(batch_size=batch_size)
@@ -101,7 +102,7 @@ with relay.build_config(opt_level=opt_level):
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
         graph, lib, params = relay.build_module.build(
             net, target, params=params)
-exit()
+#exit()
 
 #####################################################################
 # Run the generate library
@@ -109,8 +110,8 @@ exit()
 # Now we can create graph runtime and run the module on Nvidia GPU.
 
 # create random input
-ctx = tvm.gpu()
-data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
+ctx = tvm.context("cuda_lite", 0)
+data = np.random.randint(5, size=data_shape).astype("int32")
 # create module
 module = graph_runtime.create(graph, lib, ctx)
 # set input and parameters
@@ -122,7 +123,8 @@ module.run()
 out = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 
 # Print first 10 elements of output
-print(out.flatten()[0:10])
+#print(out.flatten()[0:10])
+print(out.flatten())
 
 ######################################################################
 # Save and Load Compiled Module
