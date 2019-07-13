@@ -44,7 +44,7 @@ from tvm import relay
 from tvm.relay import testing
 import tvm
 from tvm.contrib import graph_runtime
-from hb import ir_pass
+from hb import thread_loop_1d as hb_ir_pass
 
 ######################################################################
 # Define Neural Network in Relay
@@ -61,12 +61,14 @@ from hb import ir_pass
 # to show the network structure.
 
 batch_size = 1
-num_class = 1000
+num_class = 8
 image_shape = (3, 224, 224)
-data_shape = (batch_size,) + image_shape
+#data_shape = (batch_size,) + image_shape
+data_shape = (batch_size, 4) 
 out_shape = (batch_size, num_class)
 
-net, params = relay.testing.dense.get_workload(batch_size=batch_size)
+net, params = relay.testing.dense.get_workload(
+        batch_size=batch_size)
 #net, params = relay.testing.conv.get_workload(batch_size=batch_size)
 
 # set show_meta_data=True if you want to show meta data
@@ -98,10 +100,10 @@ print(net.astext(show_meta_data=False))
 opt_level = 3
 target = tvm.target.cuda_lite()
 with relay.build_config(opt_level=opt_level):
-    with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
+    with tvm.build_config(add_lower_pass=[(1, hb_ir_pass.inject_thread_loop_1d)]):
         graph, lib, params = relay.build_module.build(
             net, target, params=params)
-exit()
+#exit()
 
 #####################################################################
 # Run the generate library
@@ -109,8 +111,9 @@ exit()
 # Now we can create graph runtime and run the module on Nvidia GPU.
 
 # create random input
-ctx = tvm.gpu()
-data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
+#ctx = tvm.gpu()
+ctx = tvm.context("cuda_lite", 0)
+data = np.random.randint(5, size=data_shape).astype("float32")
 # create module
 module = graph_runtime.create(graph, lib, ctx)
 # set input and parameters
@@ -122,7 +125,8 @@ module.run()
 out = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 
 # Print first 10 elements of output
-print(out.flatten()[0:10])
+#print(out.flatten()[0:10])
+print(out.flatten())
 
 ######################################################################
 # Save and Load Compiled Module
