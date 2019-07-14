@@ -485,7 +485,7 @@ void CodeGenC::VisitExpr_(const Min *op, std::ostream& os) {  // NOLINT(*)
   PrintBinaryExpr(op, "min", os, this);
 }
 void CodeGenC::VisitExpr_(const Max *op, std::ostream& os) {  // NOLINT(*)
-  PrintBinaryExpr(op, "max", os, this);
+  PrintBinaryExpr(op, "fmax", os, this);
 }
 void CodeGenC::VisitExpr_(const EQ *op, std::ostream& os) {  // NOLINT(*)
   PrintBinaryExpr(op, "==", os, this);

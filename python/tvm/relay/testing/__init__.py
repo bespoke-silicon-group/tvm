@@ -18,7 +18,9 @@
 from __future__ import absolute_import as _abs
 
 from . import dense
+from . import max_pool2d
 from . import conv
+from . import relu
 from . import mlp
 from . import resnet
 from . import dqn
