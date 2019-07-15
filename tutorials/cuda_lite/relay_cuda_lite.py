@@ -46,57 +46,21 @@ import tvm
 from tvm.contrib import graph_runtime
 from hb import ir_pass
 
-######################################################################
-# Define Neural Network in Relay
-# -----------------------------
-# First, let's define a neural network with relay python frontend.
-# For simplicity, we'll use pre-defined resnet-18 network in Relay.
-# Parameters are initialized with Xavier initializer.
-# Relay also supports other model formats such as MXNet, CoreML, ONNX and
-# Tensorflow.
-#
-# In this tutorial, we assume we will do inference on our device
-# and the batch size is set to be 1. Input images are RGB color
-# images of size 224 * 224. We can call the :any:`tvm.relay.expr.astext()`
-# to show the network structure.
-
+dtype="float32"
 batch_size = 1
-num_class = 1000
-#image_shape = (3, 224, 224)
-image_shape = (16, 16)
-data_shape = (batch_size,) + image_shape
-#data_shape = (batch_size, 16)
-#out_shape = (batch_size, num_class)
-out_shape = (batch_size, 16)
+num_classes = 16
+image_shape = (1, 8, 8)
+data_shape = (batch_size, ) + image_shape
+out_shape = (batch_size, num_class)
 
-net, params = relay.testing.max_pool2d.get_workload(batch_size=batch_size)
-#net, params = relay.testing.conv.get_workload(batch_size=batch_size)
+net, params = relay.testing.dense.get_workload(
+        batch_size=batch_size, 
+        num_classes=num_classes,
+        image_shape=image_shape,
+        dtype=dtype)
 
 # set show_meta_data=True if you want to show meta data
 print(net.astext(show_meta_data=False))
-
-######################################################################
-# Compilation
-# -----------
-# Next step is to compile the model using the Relay/TVM pipeline.
-# Users can specify the optimization level of the compilation.
-# Currently this value can be 0 to 3. The optimization passes include
-# operator fusion, pre-computation, layout transformation and so on.
-#
-# :any:`relay.build_module.build` returns three components: the execution graph in
-# json format, the TVM module library of compiled functions specifically
-# for this graph on the target hardware, and the parameter blobs of
-# the model. During the compilation, Relay does the graph-level
-# optimization while TVM does the tensor-level optimization, resulting
-# in an optimized runtime module for model serving.
-#
-# We'll first compile for Nvidia GPU. Behind the scene, `relay.build_module.build`
-# first does a number of graph-level optimizations, e.g. pruning, fusing, etc.,
-# then registers the operators (i.e. the nodes of the optimized graphs) to
-# TVM implementations to generate a `tvm.module`.
-# To generate the module library, TVM will first transfer the high level IR
-# into the lower intrinsic IR of the specified target backend, which is CUDA
-# in this example. Then the machine code will be generated as the module library.
 
 opt_level = 3
 target = tvm.target.cuda_lite()
