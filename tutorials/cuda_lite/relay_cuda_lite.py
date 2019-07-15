@@ -51,7 +51,7 @@ batch_size = 1
 num_classes = 16
 image_shape = (1, 8, 8)
 data_shape = (batch_size, ) + image_shape
-out_shape = (batch_size, num_class)
+out_shape = (batch_size, num_classes)
 
 net, params = relay.testing.dense.get_workload(
         batch_size=batch_size, 
@@ -63,7 +63,8 @@ net, params = relay.testing.dense.get_workload(
 print(net.astext(show_meta_data=False))
 
 opt_level = 3
-target = tvm.target.cuda_lite()
+#target = tvm.target.cuda_lite()
+target = tvm.target.cuda()
 with relay.build_config(opt_level=opt_level):
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
         graph, lib, params = relay.build_module.build(
