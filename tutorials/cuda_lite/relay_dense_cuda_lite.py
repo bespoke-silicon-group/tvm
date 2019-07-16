@@ -23,7 +23,8 @@ net, params = relay.testing.dense.get_workload(
 print(net.astext(show_meta_data=False))
 
 opt_level = 3
-target = tvm.target.cuda_lite()
+#target = tvm.target.cuda_lite()
+target = tvm.target.cuda()
 with relay.build_config(opt_level=opt_level):
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
         graph, lib, params = relay.build_module.build(

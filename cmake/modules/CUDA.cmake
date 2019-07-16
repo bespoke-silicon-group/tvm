@@ -32,7 +32,6 @@ if(USE_CUDA)
   file(GLOB RUNTIME_CUDA_SRCS src/runtime/cuda/*.cc)
   list(APPEND RUNTIME_SRCS ${RUNTIME_CUDA_SRCS})
   list(APPEND COMPILER_SRCS src/codegen/opt/build_cuda_on.cc)
-  list(APPEND COMPILER_SRCS src/codegen/opt/build_cuda_lite_on.cc)
 
   list(APPEND TVM_LINKER_LIBS ${CUDA_NVRTC_LIBRARY})
   list(APPEND TVM_RUNTIME_LINKER_LIBS ${CUDA_CUDART_LIBRARY})
