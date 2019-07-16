@@ -1,43 +1,3 @@
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-"""
-.. _tutorial-relay-quick-start:
-
-Quick Start Tutorial for Compiling Deep Learning Models
-======================================================
-**Author**: `Yao Wang <https://github.com/kevinthesun>`_, `Truman Tian <https://github.com/SiNZeRo>`_
-
-This example shows how to build a neural network with Relay python frontend and
-generates a runtime library for Nvidia GPU with TVM.
-Notice that you need to build TVM with cuda and llvm enabled.
-"""
-
-######################################################################
-# Overview for Supported Hardware Backend of TVM
-# ----------------------------------------------
-# The image below shows hardware backend currently supported by TVM:
-#
-# .. image:: https://github.com/dmlc/web-data/raw/master/tvm/tutorial/tvm_support_list.png
-#      :align: center
-#      :scale: 100%
-#
-# In this tutorial, we'll choose cuda and llvm as target backends.
-# To begin with, let's import Relay and TVM.
-
 import numpy as np
 
 from tvm import relay
@@ -48,15 +8,13 @@ from hb import ir_pass
 
 dtype="float32"
 batch_size = 1
-num_classes = 16
-image_shape = (1, 8, 8)
-data_shape = (batch_size, ) + image_shape
-out_shape = (batch_size, num_class)
+input_shape = (1, 4, 4)
+data_shape = (batch_size, ) + input_shape
+out_shape = (batch_size, ) + input_shape
 
-net, params = relay.testing.dense.get_workload(
+net, params = relay.testing.relu.get_workload(
         batch_size=batch_size, 
-        num_classes=num_classes,
-        image_shape=image_shape,
+        input_shape=input_shape,
         dtype=dtype)
 
 # set show_meta_data=True if you want to show meta data
@@ -68,7 +26,7 @@ with relay.build_config(opt_level=opt_level):
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
         graph, lib, params = relay.build_module.build(
             net, target, params=params)
-exit()
+#exit()
 
 #####################################################################
 # Run the generate library
@@ -77,7 +35,6 @@ exit()
 
 # create random input
 ctx = tvm.context("cuda_lite", 0)
-#data = np.random.randint(5, size=data_shape).astype("int32")
 data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
 # create module
 module = graph_runtime.create(graph, lib, ctx)

@@ -22,64 +22,21 @@ from tvm import relay
 from .init import create_workload
 
 def get_net(batch_size,
-            num_classes=8,
-            image_shape=(16, 16),
+            input_shape=(1, 16, 16),
             dtype="float32"):
-    """Get network a simple multilayer perceptron.
 
-    batch_size : int
-        The batch size used in the model
-
-    num_classes : int, optional
-        Number of claseses
-
-    image_shape : tuple, optional
-        The input image shape
-
-    dtype : str, optional
-        The data type
-
-    Returns
-    -------
-    net : relay.Function
-        The dataflow.
-    """
-    data_shape = (batch_size, image_shape) 
+    data_shape = (batch_size, ) + input_shape
     data = relay.var("data",
                      shape=data_shape,
                      dtype=dtype)
-    pl = relay.nn.max_pool2d(data=data, pool_size=(2, 2), stride=(2, 2))
-    args = relay.ir_pass.free_vars(pl)
-    return relay.Function(args, pl)
+    pool = relay.nn.max_pool2d(data=data, pool_size=(2, 2), strides=(2, 2))
+    args = relay.ir_pass.free_vars(pool)
+    return relay.Function(args, pool)
 
 
 def get_workload(batch_size,
-                 num_classes=8,
-                 image_shape=(16, 16),
+                 input_shape=(1, 16, 16),
                  dtype="float32"):
-    """Get benchmark workload for a simple multilayer perceptron.
 
-    Parameters
-    ----------
-    batch_size : int
-        The batch size used in the model
-
-    num_classes : int, optional
-        Number of claseses
-
-    image_shape : tuple, optional
-        The input image shape
-
-    dtype : str, optional
-        The data type
-
-    Returns
-    -------
-    net : relay.Function
-        The dataflow.
-
-    params : dict of str to NDArray
-        The parameters.
-    """
-    net = get_net(batch_size, num_classes, image_shape, dtype)
+    net = get_net(batch_size, input_shape, dtype)
     return create_workload(net)
