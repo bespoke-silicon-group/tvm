@@ -5,16 +5,12 @@
 #include "hbmc_module.h"
 
 #include <tvm/runtime/registry.h>
-//#include <cuda.h>
-//#include <cuda_runtime.h>
 #include <vector>
 #include <array>
 #include <string>
 #include <mutex>
 
-//#include <bsg_manycore_driver.h>
 #include <bsg_manycore_tile.h>
-//#include <bsg_manycore_mem.h>
 #include <bsg_manycore_loader.h>
 #include <bsg_manycore_errno.h>
 #include <bsg_manycore_cuda.h>
@@ -212,27 +208,21 @@ class HBMCWrappedFunc {
 
     ThreadWorkLoad wl = thread_axis_cfg_.Extract(args);
         
-    // For HammerBlade, we should always have 2D tile_group and grid
     hb_mc_dimension_t tg_dim = { .x = wl.block_dim(0), .y = wl.block_dim(1)}; 
     hb_mc_dimension_t grid_dim = { .x = wl.grid_dim(0), .y = wl.grid_dim(1)}; 
 
+    std::cout << " grid=(" << wl.grid_dim(0) << ","
+              << wl.grid_dim(1) << "," << wl.grid_dim(2) << "), "
+              << " block=(" << wl.block_dim(0) << ","
+              << wl.block_dim(1) << "," << wl.block_dim(2) << ")\n";
 
     if (hb_mc_application_init(&HBMC_DEVICE_, grid_dim, tg_dim, local_f_name, 
         num_void_args, k_argv) != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to init grid on manycore";
 
-    //std::cout << "going to call hb_mc_grid_init()\n";
-    /*
-    if (hb_mc_grid_init(&HBMC_DEVICE_, grid_dim, tg_dim, local_f_name, num_void_args, k_argv) 
-        != HB_MC_SUCCESS)
-      LOG(FATAL) << "Unable to init grid on manycore";
-    */
-        
     std::cout << "going to call hb_mc_device_tile_groups_execute()\n";
     if (hb_mc_device_tile_groups_execute(&HBMC_DEVICE_) != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to launch hbmc device code";
-
-    //hb_mc_cuda_sync(0, &tiles[0]); /* if CUDA sync is correct, this program won't hang here. */
   }
 
  private:
