@@ -23,6 +23,8 @@ def merge_for_loops(op):
     return None
 
 def inject_thread_loop(stmt):
+    print("IR before Transform")
+    print(stmt)
     ori_threads = None
     tar_threads = 2
 
@@ -82,4 +84,6 @@ def inject_thread_loop(stmt):
         return None
 
     stmt = tvm.ir_pass.IRTransform(stmt, None, inject_for_loop, ['AttrStmt'])
+    print("IR after Transform")
+    print(stmt)
     return stmt

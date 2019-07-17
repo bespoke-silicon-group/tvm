@@ -6,11 +6,13 @@ import tvm
 from tvm.contrib import graph_runtime
 from hb import ir_pass
 
-dtype="float32"
+dtype="int32"
 batch_size = 1
-num_neurons = 16
-input_shape = (1, 8, 8)
-data_shape = (batch_size, ) + input_shape
+num_neurons = 4
+#input_shape = (1, 8, 8)
+input_shape = (4)
+#data_shape = (batch_size, ) + input_shape
+data_shape = (batch_size, input_shape)
 out_shape = (batch_size, num_neurons)
 
 net, params = relay.testing.dense.get_workload(
@@ -28,7 +30,7 @@ with relay.build_config(opt_level=opt_level):
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
         graph, lib, params = relay.build_module.build(
             net, target, params=params)
-#exit()
+exit()
 
 #####################################################################
 # Run the generate library
