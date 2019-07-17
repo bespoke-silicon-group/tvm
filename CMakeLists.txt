@@ -200,15 +200,17 @@ if(USE_GRAPH_RUNTIME)
 endif(USE_GRAPH_RUNTIME)
 
 if(USE_HBMC OR USE_CUDA_LITE)
+  set(BSG_F1_DIR $ENV{BSG_F1_DIR})
   message(STATUS "Build with CUDA-Lite support...")
-  #file(GLOB RUNTIME_RPC_SRCS src/runtime/rpc/*.cc)
   list(APPEND COMPILER_SRCS src/codegen/opt/build_cuda_lite_on.cc)
 
-  set(HBMC_INCLUDE_DIRS "/home/centos/bsg_f1/cl_manycore/libraries/")
+  string(CONCAT HBMC_INCLUDE_DIRS ${BSG_F1_DIR} "/cl_manycore/libraries/")
   include_directories(${HBMC_INCLUDE_DIRS})
   file(GLOB RUNTIME_HB_SRCS src/runtime/hbmc/*.cc)
   list(APPEND RUNTIME_SRCS ${RUNTIME_HB_SRCS})
-  set(HBMC_HBMC_LIBRARY "/home/centos/bsg_f1/cl_manycore/libraries/libbsg_manycore_runtime.so.1.0")
+
+  # make sure you install the bsg_f1 library
+  set(HBMC_HBMC_LIBRARY "/usr/lib64/libbsg_manycore_runtime.so")
   list(APPEND TVM_RUNTIME_LINKER_LIBS ${HBMC_HBMC_LIBRARY})
 endif(USE_HBMC OR USE_CUDA_LITE)
 
