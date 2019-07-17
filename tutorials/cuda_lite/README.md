@@ -35,7 +35,7 @@ git fetch
 git checkout hammerblade
 ```
 * Follow the TVM installation [guide](https://docs.tvm.ai/install/from_source.html) to compile TVM from source.
-* Please modify the config.cmake, set USE_HBMC to on and set USE_LLVM to llvm-config path.
+* Please modify the config.cmake, set USE_CUDA_LITE to on and set USE_LLVM to llvm-config path.
 * Compile the bgs_f1 library and adjust the path of HBMC_HBMC_LIBRARY in CMakeLists.txt.
 
 ## Run
