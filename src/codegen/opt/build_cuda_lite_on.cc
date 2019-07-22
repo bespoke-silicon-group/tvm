@@ -46,7 +46,7 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   std::string flags = "-march=rv32imaf -static -std=gnu99 -ffast-math -fno-common -ffp-contract=off";
   std::string includes = "-I" + manycore_path + "/software/spmd/common/";
   includes += " -I" + manycore_path + "/software/bsg_manycore_lib";
-  std::string dynamics = "-Dbsg_tiles_X=2 -Dbsg_tiles_Y=2 -Dbsg_global_X=4 -Dbsg_global_Y=4 -Dbsg_group_size=4 -mno-fdiv -O2 -DPREALLOCATE=0 -DHOST_DEBUG=0";
+  std::string dynamics = "-Dbsg_tiles_X=4 -Dbsg_tiles_Y=4 -Dbsg_global_X=4 -Dbsg_global_Y=5 -Dbsg_group_size=16 -mno-fdiv -O2 -DPREALLOCATE=0 -DHOST_DEBUG=0";
 
   std::string cmd = compiler + " " + flags + " " + includes + " " + dynamics;
   cmd += " -c " + file_name_prefix + ".c -o " + file_name_prefix + ".o";
@@ -64,7 +64,8 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
 
   std::string compiler_t = "-t -T " + manycore_path +"/software/spmd/common/link_dmem2.ld";
   std::string compiler_w = "-Wl,--defsym,bsg_group_size=4 -Wl,--defsym,_bsg_elf_dram_size=1207959552 -Wl,--defsym,_bsg_elf_vcache_size=294912 -Wl,--defsym,_bsg_elf_stack_ptr=0x00001ffc -Wl,--no-check-sections";
-  std::string compiler_misc = "-march=rv32imaf -nostdlib -nostartfiles -ffast-math";
+  //std::string compiler_misc = "-march=rv32imaf -nostdlib -nostartfiles -ffast-math";
+  std::string compiler_misc = "-march=rv32imaf -nostartfiles -ffast-math";
   std::string compiler_l = "-lc -lgcc -lm -l:crt.o -L " + manycore_path + "/software/spmd/common";
   std::string out_name = file_name_prefix + ".riscv";
 
