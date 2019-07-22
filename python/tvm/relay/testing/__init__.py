@@ -21,8 +21,10 @@ from . import dense
 from . import max_pool2d
 from . import conv
 from . import relu
+from . import softmax
 from . import mlp
 from . import resnet
+from . import sdh_convnet
 from . import dqn
 from . import dcgan
 from . import mobilenet
