@@ -7,9 +7,7 @@
 #include <dmlc/thread_local.h>
 #include <tvm/runtime/registry.h>
 
-//#include <bsg_manycore_driver.h>
 #include <bsg_manycore_tile.h>
-//#include <bsg_manycore_mem.h>
 #include <bsg_manycore_loader.h>
 #include <bsg_manycore_errno.h>
 #include <bsg_manycore_cuda.h>
@@ -25,60 +23,20 @@ class HBMCDeviceAPI final : public DeviceAPI {
   HBMCDeviceAPI() {
     init_flag = false;
   }
+  ~HBMCDeviceAPI() {
+    hb_mc_device_finish(&HBMC_DEVICE_); /* freeze the tiles and memory manager cleanup */
+  }
   void SetDevice(TVMContext ctx) final {
     if (init_flag == false) {
-      /*
-      std::cout << "Call HBMCDeviceAPI::SetDevice(), Initializing HBMC host...\n";
-      hb_mc_init_host((uint8_t*)&(ctx.device_id));
-      //LOG(INFO) << "ctx.device_id: " << ctx.device_id;
-
-      tile_t tiles[4];
-      uint32_t num_tiles = 4, num_tiles_x = 2, num_tiles_y = 2, origin_x = 0, origin_y = 1;
-      // 2 x 2 tile group at (0, 1) 
-      create_tile_group(tiles, num_tiles_x, num_tiles_y, origin_x, origin_y); 
-
-      eva_id_t eva_id = 0;
-
-      std::cout << "Initializing HBMC device...\n";
-      //char elf_path[] = "/home/centos/tvm-hb/tutorials/cuda_lite/cuda_lite_kernel.riscv";
-      char elf_path[] = "cuda_lite_kernel.riscv";
-      // TODO hb_mc_init_device(should not take binary as input)
-      if (hb_mc_init_device(ctx.device_id, eva_id, elf_path, &tiles[0], num_tiles) != HB_MC_SUCCESS)
-        LOG(FATAL) << "could not initialize device.";
-      */
-
-      /*
-      uint8_t mesh_dim_x = 4;
-      uint8_t mesh_dim_y = 4;
-      uint8_t mesh_origin_x = 0;
-      uint8_t mesh_origin_y = 1;
-      eva_id_t eva_id = 0;
-      char elf_path[] = "cuda_lite_kernel.riscv";
-
-      std::cout << "Initializing HBMC device...\n";
-      // TODO the device info should be passed to ctx
-      if (hb_mc_device_init(&HBMC_DEVICE_, eva_id, elf_path, mesh_dim_x, mesh_dim_y, 
-          mesh_origin_x, mesh_origin_y) != HB_MC_SUCCESS)
-        LOG(FATAL) << "could not initialize device.";
-      ctx.device_id = HBMC_DEVICE_.fd;
-      LOG(INFO) << "ctx.device_id: " << ctx.device_id;
-
-      std::cout << "mesh->origin_x = " << (HBMC_DEVICE_.mesh)->origin_x << std::endl;
-      std::cout << "mesh->origin_y = " << (HBMC_DEVICE_.mesh)->origin_y << std::endl;
-      std::cout << "elf_path = " << HBMC_DEVICE_.elf << std::endl;
-      */
+      std::cout << "Call HBMCDeviceAPI::SetDevice(), Initializing HBMC device...\n";
 
       hb_mc_device_t device;
       char elf_path[] = "cuda_lite_kernel.riscv";
-      //hb_mc_dimension_t mesh_dim = { .x = 4, .y = 4 }; 
-      //if (hb_mc_device_init(&HBMC_DEVICE_, "tvm_hb", 0, mesh_dim) != HB_MC_SUCCESS)
-        //LOG(FATAL) << "could not initialize device.";
       if (hb_mc_device_init(&HBMC_DEVICE_, "tvm_hb", 0) != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize device.";
       
       ctx.device_id = HBMC_DEVICE_.mc->id;
 
-      //char* elf = BSG_STRINGIFY(BSG_MANYCORE_DIR) "/software/spmd/bsg_cuda_lite_runtime" "/vec_add/main.riscv";
       if (hb_mc_device_program_init(&HBMC_DEVICE_, elf_path, "tvm_hb", 0) != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize program.";
 
@@ -94,15 +52,8 @@ class HBMCDeviceAPI final : public DeviceAPI {
                        size_t nbytes,
                        size_t alignment,
                        TVMType type_hint) final {
-    //std::cout << "Call HBMCDeviceAPI::AllocDataSpace()\n";
     // TODO do this when TVM setup the context
     HBMCDeviceAPI::SetDevice(ctx);
-
-    /*
-    std::cout << "HBMCDeviceAPI::AllocDataSpace(): ";
-    std::cout << "ctx.(device_type, device_id) = (" << ctx.device_type;
-    std::cout << ", " << ctx.device_id << ")" << std::endl;
-    */
 
     eva_t ptr;
     if (init_flag == true) {
@@ -116,7 +67,6 @@ class HBMCDeviceAPI final : public DeviceAPI {
   }
 
   void FreeDataSpace(TVMContext ctx, void* ptr) final {
-    //std::cout << "Call HBMCDeviceAPI::FreeDataSpace()\n";
     if (init_flag == true) {
       printf("free FPGA memory at addr: 0x%x\n", reinterpret_cast<uint32_t*>(ptr));
       hb_mc_device_free(&HBMC_DEVICE_, static_cast<uint32_t>(
@@ -135,16 +85,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
                       TVMContext ctx_to,
                       TVMType type_hint,
                       TVMStreamHandle stream) final {
-    //std::cout << "Call HBMCDeviceAPI::CopyDataFromTo()\n";
-
-    /*
-    std::cout << "size: " << size << std::endl;
-    std::cout << "HBMCDeviceAPI::CopyFromBytes(): \n";
-    std::cout << "ctx_from.(device_type, device_id) = (" << ctx_from.device_type;
-    std::cout << ", " << ctx_from.device_id << ")" << std::endl;
-    std::cout << "ctx_to.(device_type, device_id) = (" << ctx_to.device_type;
-    std::cout << ", " << ctx_to.device_id << ")" << std::endl;
-    */
+    std::cout << "Call HBMCDeviceAPI::CopyDataFromTo()\n";
 
     if (init_flag == true) {
       if (ctx_from.device_type == kDLCPU) {
@@ -154,14 +95,6 @@ class HBMCDeviceAPI final : public DeviceAPI {
         if (hb_mc_device_memcpy(&HBMC_DEVICE_, to, 
             from, size, HB_MC_MEMCPY_TO_DEVICE) != HB_MC_SUCCESS)
           LOG(FATAL) << "Unable to memcpy from host to hbmc device.";
-
-        /*
-        int32_t *arr = static_cast<int32_t*>((void*)from);
-        printf("from[0:8]: ");
-        for (int i = 0; i < 8; i++)
-          printf("%d ", arr[i]); 
-        printf("\n");
-        */
       }
       else {
         printf("copy from fpga mem addr: 0x%x ", 
@@ -186,7 +119,6 @@ class HBMCDeviceAPI final : public DeviceAPI {
   }
 
   void FreeWorkspace(TVMContext ctx, void* data) final {
-    hb_mc_device_finish(&HBMC_DEVICE_); /* freeze the tiles and memory manager cleanup */
     HBMCThreadEntry::ThreadLocal()->pool.FreeWorkspace(ctx, data);
   }
 

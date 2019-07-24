@@ -223,6 +223,8 @@ class HBMCWrappedFunc {
     std::cout << "going to call hb_mc_device_tile_groups_execute()\n";
     if (hb_mc_device_tile_groups_execute(&HBMC_DEVICE_) != HB_MC_SUCCESS)
       LOG(FATAL) << "Unable to launch hbmc device code";
+
+    std::cout << "finished kernel: " << func_name_ << " on hammerblade manycore"<< std::endl;
   }
 
  private:
