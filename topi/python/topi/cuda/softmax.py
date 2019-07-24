@@ -45,7 +45,8 @@ def schedule_softmax(outs):
         for op in [max_elem.op, expsum.op, softmax.op]:
             s = _schedule_injective(op, s)
     else:
-        num_thread = 64
+        #num_thread = 64
+        num_thread = 1
         block_x = tvm.thread_axis("blockIdx.x")
         thread_x = tvm.thread_axis((0, num_thread), "threadIdx.x")
 
@@ -57,6 +58,9 @@ def schedule_softmax(outs):
         s[expsum].bind(s[expsum].op.reduce_axis[0], thread_x)
         s[EF].compute_at(s[expsum], s[expsum].op.reduce_axis[0])
         s[expsum].set_store_predicate(thread_x.var.equal(0))
+
+        #num_thread = 4
+        #thread_x = tvm.thread_axis((0, num_thread), "threadIdx.x")
         tx, xi = s[softmax].split(softmax.op.axis[1], nparts=num_thread)
         s[softmax].bind(softmax.op.axis[0], block_x)
         s[softmax].bind(tx, thread_x)

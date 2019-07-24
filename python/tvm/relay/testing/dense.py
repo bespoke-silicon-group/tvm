@@ -26,12 +26,11 @@ def get_net(batch_size=1,
             input_shape=(1, 8, 8),
             dtype="float32"):
 
-    #data_shape = (batch_size, ) + input_shape
-    data_shape = (batch_size, input_shape)
+    data_shape = (batch_size, ) + input_shape
     data = relay.var("data",
                      shape=data_shape,
                      dtype=dtype)
-    #data = relay.nn.batch_flatten(data)
+    data = relay.nn.batch_flatten(data)
     fc1 = relay.nn.dense(data, relay.var("fc1_weight"), units=num_neurons)
     args = relay.ir_pass.free_vars(fc1)
     return relay.Function(args, fc1)

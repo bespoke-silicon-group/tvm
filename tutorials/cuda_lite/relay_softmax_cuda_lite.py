@@ -10,7 +10,7 @@ dtype="float32"
 batch_size = 1
 #num_neurons = 8
 #input_shape = (1, 4, 4)
-input_shape = (32)
+input_shape = (16)
 #data_shape = (batch_size, ) + input_shape
 data_shape = (batch_size, input_shape)
 #out_shape = (batch_size, num_neurons)
@@ -26,6 +26,7 @@ print(net.astext(show_meta_data=False))
 
 #opt_level = 3
 target = tvm.target.cuda_lite()
+#target = "llvm"
 #with relay.build_config(opt_level=opt_level):
 with relay.build_config():
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
@@ -40,6 +41,7 @@ exit()
 
 # create random input
 ctx = tvm.context("cuda_lite", 0)
+#ctx = tvm.context("llvm", 0)
 data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
 # create module
 module = graph_runtime.create(graph, lib, ctx)

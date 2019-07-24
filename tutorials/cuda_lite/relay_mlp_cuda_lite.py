@@ -8,18 +8,15 @@ from hb import ir_pass
 
 dtype="float32"
 batch_size = 1
-num_neurons = 16
-input_shape = (1, 8, 8)
+num_classes = 10
+input_shape = (1, 28, 28)
 #input_shape = (8)
 data_shape = (batch_size, ) + input_shape
 #data_shape = (batch_size, input_shape)
-out_shape = (batch_size, num_neurons)
+out_shape = (batch_size, num_classes)
 
-net, params = relay.testing.dense.get_workload(
-        batch_size=batch_size, 
-        num_neurons=num_neurons,
-        input_shape=input_shape,
-        dtype=dtype)
+net, params = relay.testing.mlp.get_workload(
+        batch_size=batch_size)
 
 # set show_meta_data=True if you want to show meta data
 print(net.astext(show_meta_data=False))
@@ -32,7 +29,7 @@ with relay.build_config():
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
         graph, lib, params = relay.build_module.build(
             net, target, params=params)
-exit()
+#exit()
 
 #####################################################################
 # Run the generate library
@@ -54,8 +51,8 @@ module.run()
 out = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 
 # Print first 10 elements of output
-#print(data)
 print(out.flatten())
+#print(data)
 exit()
 
 ######################################################################
