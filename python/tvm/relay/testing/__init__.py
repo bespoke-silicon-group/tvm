@@ -19,7 +19,7 @@ from __future__ import absolute_import as _abs
 
 from . import dense
 from . import max_pool2d
-from . import conv
+from . import conv2d
 from . import relu
 from . import softmax
 from . import mlp
