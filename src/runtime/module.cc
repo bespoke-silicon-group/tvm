@@ -74,10 +74,8 @@ Module Module::LoadFromFile(const std::string& file_name,
   }
   if (fmt == "hbmc" || fmt == "riscv" ) {
     fmt = "hbmc";
-    //std::cout << "detect format = hbmc\n";
   }
   std::string load_f_name = "module.loadfile_" + fmt;
-  //std::cout << "Module::LoadFromFile() " << load_f_name << std::endl;
   const PackedFunc* f = Registry::Get(load_f_name);
   CHECK(f != nullptr)
       << "Loader of " << format << "("

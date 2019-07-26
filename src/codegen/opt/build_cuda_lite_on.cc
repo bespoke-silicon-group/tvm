@@ -36,7 +36,6 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   if (const auto* f = Registry::Get("tvm_callback_cuda_lite_postproc")) {
     code = (*f)(code).operator std::string();
   }
-  //LOG(INFO) << code;
 
   std::string file_name_prefix = "cuda_lite_kernel";
   runtime::SaveBinaryToFile(file_name_prefix + ".c", code.c_str());
@@ -82,7 +81,7 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   std::string data;
   runtime::LoadBinaryFromFile(out_name, &data);
 
-  return HBMCModuleCreate(data, "riscv", ExtractFuncInfo(funcs), code.c_str(), out_name);
+  return HBMCModuleCreate(data, "hbmc", ExtractFuncInfo(funcs), code.c_str());
 
   /*
   if (const auto* f = Registry::Get("tvm_callback_cuda_postproc")) {
