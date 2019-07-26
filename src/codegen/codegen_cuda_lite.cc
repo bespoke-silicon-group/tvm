@@ -7,6 +7,7 @@
 #include <tvm/packed_func_ext.h>
 #include <vector>
 #include <string>
+#include "../pass/ir_util.h"
 #include "codegen_cuda_lite.h"
 #include "../arithmetic/compute_expr.h"
 
@@ -29,7 +30,6 @@ void CodeGenCUDALite::AddFunction(LoweredFunc f) {
   //this->stream << "extern \"C\" __global__ ";
   //this->stream << "__attribute__";
   CodeGenC::AddFunction(f);
-  //LOG(INFO) << f->body;
 }
 
 std::string CodeGenCUDALite::Finish() {
@@ -41,8 +41,10 @@ std::string CodeGenCUDALite::Finish() {
   decl_stream << "#define BSG_TILE_GROUP_Y_DIM bsg_tiles_Y\n";
   decl_stream << "#include \"bsg_tile_group_barrier.h\"\n";
 
-  decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, bsg_tiles_X-1,"
-              << " 0, bsg_tiles_Y-1)\n";
+  //decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, bsg_tiles_X-1,"
+  //            << " 0, bsg_tiles_Y-1)\n";
+  decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, 2-1,"
+              << " 0, 1-1)\n";
 
   /*
   if (enable_fp16_) {
@@ -291,7 +293,7 @@ void CodeGenCUDALite::PrintStorageScope(
     const std::string& scope, std::ostream& os) { // NOLINT(*)
   CHECK_NE(scope, "global");
   if (scope == "shared") {
-    //os << "__shared__";
+    os << "__shared__";
   }
 }
 
@@ -367,6 +369,179 @@ inline void PrintConst(const FloatImm* op, std::ostream& os, CodeGenCUDALite* p)
 
 void CodeGenCUDALite::VisitExpr_(const FloatImm *op, std::ostream& os) { // NOLINT(*)
   PrintConst(op, os, this);
+}
+
+void CodeGenCUDALite::VisitExpr_(const Load* op, std::ostream& os) {  // NOLINT(*)
+  // Trace
+  //os << "/*CodeGenCUDALite::VisitExpr_(Load* op)*/";
+
+  int lanes = op->type.lanes();
+  // delcare type.
+  if (op->type.lanes() == 1) {
+    // Trace
+    //os << "/*op->type.lanes() == 1*/";
+
+    const Variable* buffer = op->buffer_var.as<Variable>();
+    std::string scope;
+
+    if (alloc_storage_scope_.count(buffer))
+        scope = alloc_storage_scope_.at(buffer);
+
+    if (scope == "shared") {
+      os << "bsg_tile_group_shared_load_direct(" << GetVarID(buffer) << ", ";
+      PrintExpr(op->index, os);
+      os << ")";
+    }
+    else {
+      std::string ref = GetBufferRef(op->type, op->buffer_var.get(), op->index);
+      os << ref;
+    }
+  } else {
+    CHECK(is_one(op->predicate))
+        << "predicated load is not supported";
+    Expr base;
+    if (GetRamp1Base(op->index, op->type.lanes(), &base)) {
+      std::string ref = GetVecLoad(op->type, op->buffer_var.get(), base);
+      os << ref;
+    } else {
+      // The assignment below introduces side-effect, and the resulting value cannot
+      // be reused across multiple expression, thus a new scope is needed
+      int vec_scope = BeginScope();
+
+      // load seperately.
+      std::string svalue = GetUniqueName("_");
+      this->PrintIndent();
+      this->PrintType(op->type, stream);
+      stream << ' ' << svalue << ";\n";
+      std::string sindex = SSAGetID(PrintExpr(op->index), op->index.type());
+      std::string vid = GetVarID(op->buffer_var.get());
+      Type elem_type = op->type.element_of();
+      for (int i = 0; i < lanes; ++i) {
+        std::ostringstream value_temp;
+        if (!HandleTypeMatch(op->buffer_var.get(), elem_type)) {
+          value_temp << "((";
+          if (op->buffer_var.get()->type.is_handle()) {
+            auto it = alloc_storage_scope_.find(op->buffer_var.get());
+            if (it != alloc_storage_scope_.end()) {
+              PrintStorageScope(it->second, value_temp);
+              value_temp << ' ';
+            }
+          }
+          PrintType(elem_type, value_temp);
+          value_temp << "*)" << vid << ')';
+        } else {
+          value_temp << vid;
+        }
+        value_temp << '[';
+        PrintVecElemLoad(sindex, op->index.type(), i, value_temp);
+        value_temp << ']';
+        PrintVecElemStore(svalue, op->type, i, value_temp.str());
+      }
+      os << svalue;
+      EndScope(vec_scope);
+    }
+  }
+}
+
+void CodeGenCUDALite::VisitStmt_(const Store* op) {
+  Type t = op->value.type();
+  if (t.lanes() == 1) {
+    std::string value = this->PrintExpr(op->value);
+    std::string ref  = this->GetBufferRef(t, op->buffer_var.get(), op->index);
+    this->PrintIndent();
+
+    const Variable* buffer = op->buffer_var.as<Variable>();
+    std::string scope;
+
+    if (alloc_storage_scope_.count(buffer))
+        scope = alloc_storage_scope_.at(buffer);
+
+    if (scope == "shared") {
+      stream << "bsg_tile_group_shared_store(" << GetVarID(buffer) << ", ";
+      PrintExpr(op->index, stream);
+      stream << ", " << value << ");\n";
+    }
+    else {
+      stream << ref << " = " << value << ";\n";
+    }
+  } else {
+    CHECK(is_one(op->predicate))
+        << "Predicated store is not supported";
+    Expr base;
+    if (GetRamp1Base(op->index, t.lanes(), &base)) {
+      std::string value = this->PrintExpr(op->value);
+      this->PrintVecStore(op->buffer_var.get(), t, base, value);
+    } else {
+      // The assignment below introduces side-effect, and the resulting value cannot
+      // be reused across multiple expression, thus a new scope is needed
+      int vec_scope = BeginScope();
+
+      // store elements seperately
+      std::string index = SSAGetID(PrintExpr(op->index), op->index.type());
+      std::string value = SSAGetID(PrintExpr(op->value), op->value.type());
+      std::string vid = GetVarID(op->buffer_var.get());
+      for (int i = 0; i < t.lanes(); ++i) {
+        this->PrintIndent();
+        Type elem_type = t.element_of();
+        if (!HandleTypeMatch(op->buffer_var.get(), elem_type)) {
+          stream << "((";
+          if (op->buffer_var.get()->type.is_handle()) {
+            auto it = alloc_storage_scope_.find(op->buffer_var.get());
+            if (it != alloc_storage_scope_.end()) {
+              PrintStorageScope(it->second, stream);
+              stream << ' ';
+            }
+          }
+          PrintType(elem_type, stream);
+          stream << "*)" << vid << ')';
+        } else {
+          stream << vid;
+        }
+        stream << '[';
+        PrintVecElemLoad(index, op->index.type(), i, stream);
+        stream << "] = ";
+        PrintVecElemLoad(value, op->value.type(), i, stream);
+        stream << ";\n";
+      }
+      EndScope(vec_scope);
+    }
+  }
+}
+
+void CodeGenCUDALite::VisitStmt_(const Allocate* op) {
+  CHECK(!is_zero(op->condition));
+  std::string vid = AllocVarID(op->buffer_var.get());
+  if (op->new_expr.defined()) {
+    // Prefer global static allocation for the program
+    CHECK_EQ(op->free_function, "nop");
+    std::string new_data = PrintExpr(op->new_expr);
+    this->PrintIndent();
+    PrintType(op->type, stream);
+    stream << "* "<< vid << '=' << new_data << ";\n";
+  } else {
+    this->PrintIndent();
+    int32_t constant_size = op->constant_allocation_size();
+    CHECK_GT(constant_size, 0)
+        << "Can only handle constant size stack allocation for now";
+    const Variable* buffer = op->buffer_var.as<Variable>();
+    std::string scope = alloc_storage_scope_.at(buffer);
+    
+    if (scope == "shared") {
+      stream << "bsg_tile_group_shared_mem("; 
+      PrintType(op->type, stream);
+      stream << ", " << vid << ", " << constant_size << ");\n";
+    }
+    else {
+      //stream << "/*CodeGenCUDALite::VisitStmt_(const Allocate* op)*/";
+      //PrintStorageScope(scope, stream);
+      //stream << ' ';
+      PrintType(op->type, stream);
+      stream << ' '<< vid << '['
+             << constant_size << "];\n";
+    }
+  }
+  RegisterHandleType(op->buffer_var.get(), op->type);
+  this->PrintStmt(op->body);
 }
 
 }  // namespace codegen
