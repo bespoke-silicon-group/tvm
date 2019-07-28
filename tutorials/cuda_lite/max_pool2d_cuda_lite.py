@@ -10,8 +10,16 @@ In this tutorial, we will demonstrate the basic workflow in TVM.
 """
 from __future__ import absolute_import, print_function
 
+BSG_CRED   = '\033[91m'
+BSG_CGREEN = '\033[92m'
+BSG_CEND   = '\033[0m'
+
 import tvm
 import numpy as np
+
+
+
+
 
 # Global declarations of environment.
 dtype = 'int32'
@@ -20,6 +28,24 @@ M = 16
 N = 4
 sub_block = M // N
 n = tvm.var("n")
+
+
+# Simple max_pool2d on the host side to compare results
+def host_max_pool2d(a):
+    ans = [[0 for x in range(N)] for y in range(N)] 
+    for i in range(0,N):
+        for j in range (0,N):
+            maxx = -1;
+            for k in range (0,sub_block):
+                for p in range (0,sub_block):
+                    maxx = max(a[i * sub_block + k][j * sub_block + p], maxx)
+            ans[i][j] = maxx
+    return ans
+
+
+
+
+
 
 k = tvm.reduce_axis((0, sub_block), 'k')
 j = tvm.reduce_axis((0, sub_block), 'j')
@@ -76,17 +102,13 @@ func(a, b)
 print (a)
 print (b)
 
-ans = [[0 for x in range(N)] for y in range(N)] 
-for i in range(0,N):
-    for j in range (0,N):
-        maxx = -1;
-        for k in range (0,sub_block):
-            for p in range (0,sub_block):
-                maxx = max(a_np[i * sub_block + k][j * sub_block + p], maxx)
-        ans[i][j] = maxx
+ans = host_max_pool2d(a_np)
 
 print(ans)
 
 err = tvm.testing.assert_allclose(b.asnumpy(), ans, rtol=1e-5)
 if not err:
-    print("The resutls of max pool 2d are correct.")
+    print(BSG_CGREEN + "PASS: Max Pool 2D results are correct." + BSG_CEND )
+else:
+    print(BSG_CRED + "FAIL: Max Pool 2D results are incorrect." + BSG_CEND )
+
