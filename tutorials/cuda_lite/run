@@ -1,0 +1,2 @@
+python max_pool2d_cuda_lite.py
+#python gemm_cuda_lite.py
