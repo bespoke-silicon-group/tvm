@@ -31,7 +31,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
       std::cout << "Call HBMCDeviceAPI::SetDevice(), Initializing HBMC device...\n";
 
       hb_mc_device_t device;
-      char elf_path[] = "cuda_lite_kernel.riscv";
+      char elf_path[] = "cuda_lite_kernel.hbmc";
       if (hb_mc_device_init(&HBMC_DEVICE_, "tvm_hb", 0) != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize device.";
       

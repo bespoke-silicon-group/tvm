@@ -22,7 +22,6 @@ namespace tvm {
 namespace codegen {
 
 runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
-  LOG(INFO);
   using tvm::runtime::Registry;
   bool output_ssa = false;
   CodeGenCUDALite cg;
@@ -66,7 +65,7 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   //std::string compiler_misc = "-march=rv32imaf -nostdlib -nostartfiles -ffast-math";
   std::string compiler_misc = "-march=rv32imaf -nostartfiles -ffast-math";
   std::string compiler_l = "-lc -lgcc -lm -l:crt.o -L " + manycore_path + "/software/spmd/common";
-  std::string out_name = file_name_prefix + ".riscv";
+  std::string out_name = file_name_prefix + ".hbmc";
 
   cmd = compiler + " " + compiler_t + " " + compiler_w + " " + main_o + " " + set_o + " " + printf_o + " " + file_name_prefix + ".o ";
   cmd = cmd + "-o " + out_name + " " + compiler_misc + " " + compiler_l;

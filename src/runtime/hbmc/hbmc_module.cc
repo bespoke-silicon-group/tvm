@@ -75,7 +75,6 @@ class HBMCModuleNode : public runtime::ModuleNode {
   }
 
   void SaveToBinary(dmlc::Stream* stream) final {
-    //LOG(INFO) << "HBMCModule::SaveToBinary()";
     stream->Write(fmt_);
     stream->Write(fmap_);
     stream->Write(data_);
@@ -187,10 +186,6 @@ class HBMCWrappedFunc {
     std::cout << "call back to operator()\n";
     char *local_f_name = new char [func_name_.length()+1];
     strcpy(local_f_name, func_name_.c_str());
-
-    // set the path for the binary
-    char elf_path[m_->GetFilename().size() + 1];
-    strcpy(elf_path, m_->GetFilename().c_str());
 
     size_t num_void_args = thread_axis_cfg_.base();
     uint32_t *k_argv = new uint32_t[num_void_args];
