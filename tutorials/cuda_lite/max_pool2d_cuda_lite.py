@@ -18,8 +18,7 @@ dtype = 'int32'
 
 M = 16
 N = 4
-#sub_block = M / N
-sub_block = 4
+sub_block = M // N
 n = tvm.var("n")
 
 k = tvm.reduce_axis((0, sub_block), 'k')
@@ -65,7 +64,6 @@ if tgt == "cuda_lite" or tgt.startswith('opencl'):
     dev_module = func.imported_modules[0]
     print("-----CUDA Lite code-----")
     print(dev_module.get_source())
-#exit()
 
 ctx = tvm.context(tgt, 0)
 
@@ -78,7 +76,17 @@ func(a, b)
 print (a)
 print (b)
 
-#ans = np.dot(a.asnumpy(), b.asnumpy())
-#err = tvm.testing.assert_allclose(c.asnumpy(), ans, rtol=1e-5)
-#if not err:
-#    print("The resutls of matrix multiplication are correct.")
+ans = [[0 for x in range(N)] for y in range(N)] 
+for i in range(0,N):
+    for j in range (0,N):
+        maxx = -1;
+        for k in range (0,sub_block):
+            for p in range (0,sub_block):
+                maxx = max(a_np[i * sub_block + k][j * sub_block + p], maxx)
+        ans[i][j] = maxx
+
+print(ans)
+
+err = tvm.testing.assert_allclose(b.asnumpy(), ans, rtol=1e-5)
+if not err:
+    print("The resutls of max pool 2d are correct.")
