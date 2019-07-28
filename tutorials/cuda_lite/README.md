@@ -37,7 +37,11 @@ git checkout hammerblade
 * Follow the TVM installation [guide](https://docs.tvm.ai/install/from_source.html) to compile TVM from source.
 * Please modify the config.cmake, set USE_CUDA_LITE to on and set USE_LLVM to llvm-config path.
 * Compile the bgs_f1 library and adjust the path of HBMC_HBMC_LIBRARY in CMakeLists.txt.
-
+* Add the following to your root path: 
+```shell
+export TVM_HOME=/path/to/tvm/
+export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:${PYTHONPATH}"
+```
 ## Run
 * Run setup_fpga.sh to get the FPGA ready
 * Enter root mode in order to execute the aws library. (you may need to add the python path for the root user)
