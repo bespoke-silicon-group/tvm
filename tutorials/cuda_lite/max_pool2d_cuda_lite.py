@@ -12,7 +12,6 @@ from __future__ import absolute_import, print_function
 
 import tvm
 import numpy as np
-import skimage.measure
 
 # Global declarations of environment.
 dtype = 'int32'
