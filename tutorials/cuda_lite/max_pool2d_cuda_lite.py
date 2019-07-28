@@ -9,10 +9,7 @@ TVM is a domain specific language for efficient kernel construction.
 In this tutorial, we will demonstrate the basic workflow in TVM.
 """
 from __future__ import absolute_import, print_function
-
-BSG_CRED   = '\033[91m'
-BSG_CGREEN = '\033[92m'
-BSG_CEND   = '\033[0m'
+import common
 
 import tvm
 import numpy as np
@@ -108,7 +105,7 @@ print(ans)
 
 err = tvm.testing.assert_allclose(b.asnumpy(), ans, rtol=1e-5)
 if not err:
-    print(BSG_CGREEN + "PASS: Max Pool 2D results are correct." + BSG_CEND )
+    print(common.BSG_CGREEN + "PASS: Max Pool 2D results are correct." + common.BSG_CEND )
 else:
-    print(BSG_CRED + "FAIL: Max Pool 2D results are incorrect." + BSG_CEND )
+    print(common.BSG_CRED + "FAIL: Max Pool 2D results are incorrect." + common.BSG_CEND )
 

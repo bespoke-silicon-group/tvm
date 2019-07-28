@@ -1,0 +1,5 @@
+BSG_CRED   = '\033[91m'
+BSG_CGREEN = '\033[92m'
+BSG_CEND   = '\033[0m'
+
+
