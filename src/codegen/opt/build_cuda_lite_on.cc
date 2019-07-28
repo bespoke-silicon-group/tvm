@@ -22,7 +22,6 @@ namespace tvm {
 namespace codegen {
 
 runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
-  LOG(INFO);
   using tvm::runtime::Registry;
   bool output_ssa = false;
   CodeGenCUDALite cg;
@@ -36,7 +35,6 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   if (const auto* f = Registry::Get("tvm_callback_cuda_lite_postproc")) {
     code = (*f)(code).operator std::string();
   }
-  //LOG(INFO) << code;
 
   std::string file_name_prefix = "cuda_lite_kernel";
   runtime::SaveBinaryToFile(file_name_prefix + ".c", code.c_str());
@@ -67,7 +65,7 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   //std::string compiler_misc = "-march=rv32imaf -nostdlib -nostartfiles -ffast-math";
   std::string compiler_misc = "-march=rv32imaf -nostartfiles -ffast-math";
   std::string compiler_l = "-lc -lgcc -lm -l:crt.o -L " + manycore_path + "/software/spmd/common";
-  std::string out_name = file_name_prefix + ".riscv";
+  std::string out_name = file_name_prefix + ".hbmc";
 
   cmd = compiler + " " + compiler_t + " " + compiler_w + " " + main_o + " " + set_o + " " + printf_o + " " + file_name_prefix + ".o ";
   cmd = cmd + "-o " + out_name + " " + compiler_misc + " " + compiler_l;
@@ -82,7 +80,7 @@ runtime::Module BuildCUDALite(Array<LoweredFunc> funcs) {
   std::string data;
   runtime::LoadBinaryFromFile(out_name, &data);
 
-  return HBMCModuleCreate(data, "riscv", ExtractFuncInfo(funcs), code.c_str(), out_name);
+  return HBMCModuleCreate(data, "hbmc", ExtractFuncInfo(funcs), code.c_str());
 
   /*
   if (const auto* f = Registry::Get("tvm_callback_cuda_postproc")) {

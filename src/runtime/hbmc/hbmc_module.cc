@@ -34,9 +34,8 @@ class HBMCModuleNode : public runtime::ModuleNode {
   explicit HBMCModuleNode(std::string data,
                           std::string fmt,
                           std::unordered_map<std::string, FunctionInfo> fmap,
-                          std::string hbmc_source,
-                          std::string file_name)
-      : data_(data), fmt_(fmt), fmap_(fmap), hbmc_source_(hbmc_source), file_name_(file_name) {
+                          std::string hbmc_source)//,
+      : data_(data), fmt_(fmt), fmap_(fmap), hbmc_source_(hbmc_source) {
     //std::fill(module_.begin(), module_.end(), nullptr);
   }
   // destructor
@@ -61,40 +60,34 @@ class HBMCModuleNode : public runtime::ModuleNode {
 
   void SaveToFile(const std::string& file_name,
                   const std::string& format) final {
-    /*
     std::string fmt = GetFileFormat(file_name, format);
     std::string meta_file = GetMetaFilePath(file_name);
-    if (fmt == "cu") {
-      CHECK_NE(cuda_source_.length(), 0);
+    if (fmt == "hbmc") {
+      CHECK_NE(hbmc_source_.length(), 0);
       SaveMetaDataToFile(meta_file, fmap_);
-      SaveBinaryToFile(file_name, cuda_source_);
+      SaveBinaryToFile(file_name, hbmc_source_);
     } else {
       CHECK_EQ(fmt, fmt_)
           << "Can only save to format=" << fmt_;
       SaveMetaDataToFile(meta_file, fmap_);
       SaveBinaryToFile(file_name, data_);
     }
-    */
   }
 
   void SaveToBinary(dmlc::Stream* stream) final {
-    /*
     stream->Write(fmt_);
     stream->Write(fmap_);
     stream->Write(data_);
-    */
   }
 
   std::string GetSource(const std::string& format) final {
-    /*
     if (format == fmt_) return data_;
-    if (cuda_source_.length() != 0) {
-      return cuda_source_;
+    if (hbmc_source_.length() != 0) {
+      return hbmc_source_;
     } else {
-      if (fmt_ == "ptx") return data_;
+      if (fmt_ == "hbmc") return data_;
       return "";
     }
-    */
     return hbmc_source_;
   }
 
@@ -194,10 +187,6 @@ class HBMCWrappedFunc {
     char *local_f_name = new char [func_name_.length()+1];
     strcpy(local_f_name, func_name_.c_str());
 
-    // set the path for the binary
-    char elf_path[m_->GetFilename().size() + 1];
-    strcpy(elf_path, m_->GetFilename().c_str());
-
     size_t num_void_args = thread_axis_cfg_.base();
     uint32_t *k_argv = new uint32_t[num_void_args];
 
@@ -273,7 +262,6 @@ class CUDAPrepGlobalBarrier {
 PackedFunc HBMCModuleNode::GetFunction(
       const std::string& name,
       const std::shared_ptr<ModuleNode>& sptr_to_self) {
-  //std::cout << "Call HBMCModuleNode GetFunction():  " << name << std::endl;
   CHECK_EQ(sptr_to_self.get(), this);
   CHECK_NE(name, symbol::tvm_module_main)
       << "Device function do not have main";
@@ -292,12 +280,10 @@ Module HBMCModuleCreate(
   std::string data,
   std::string fmt,
   std::unordered_map<std::string, FunctionInfo> fmap,
-  std::string hb_source,
-  std::string file_name) {
+  std::string hb_source) {
 
   std::shared_ptr<HBMCModuleNode> n =
-    std::make_shared<HBMCModuleNode>(data, fmt, fmap, hb_source, file_name);
-  //std::cout << "Call HBMCModuleCreate()" << std::endl;
+    std::make_shared<HBMCModuleNode>(data, fmt, fmap, hb_source);
   return Module(n);
 }
 
@@ -310,13 +296,11 @@ Module HBMCModuleLoadFile(const std::string& file_name,
   std::string meta_file = GetMetaFilePath(file_name);
   LoadBinaryFromFile(file_name, &data);
   LoadMetaDataFromFile(meta_file, &fmap);
-  //std::cout << "Call HBMCModuleLoadFile()" << std::endl;
 
-  return HBMCModuleCreate(data, fmt, fmap, std::string(), file_name);
+  return HBMCModuleCreate(data, fmt, fmap, std::string());
 }
 
-/*
-Module CUDAModuleLoadBinary(void* strm) {
+Module HBMCModuleLoadBinary(void* strm) {
   dmlc::Stream* stream = static_cast<dmlc::Stream*>(strm);
   std::string data;
   std::unordered_map<std::string, FunctionInfo> fmap;
@@ -324,9 +308,8 @@ Module CUDAModuleLoadBinary(void* strm) {
   stream->Read(&fmt);
   stream->Read(&fmap);
   stream->Read(&data);
-  return CUDAModuleCreate(data, fmt, fmap, std::string());
+  return HBMCModuleCreate(data, fmt, fmap, std::string());
 }
-*/
 
 TVM_REGISTER_GLOBAL("module.loadfile_hbmc")
 .set_body([](TVMArgs args, TVMRetValue* rv) {
@@ -343,11 +326,11 @@ TVM_REGISTER_GLOBAL("module.loadfile_ptx")
 .set_body([](TVMArgs args, TVMRetValue* rv) {
     *rv = CUDAModuleLoadFile(args[0], args[1]);
   });
-
-TVM_REGISTER_GLOBAL("module.loadbinary_cuda")
-.set_body([](TVMArgs args, TVMRetValue* rv) {
-    *rv = CUDAModuleLoadBinary(args[0]);
-  });
 */
+
+TVM_REGISTER_GLOBAL("module.loadbinary_hbmc")
+.set_body([](TVMArgs args, TVMRetValue* rv) {
+    *rv = HBMCModuleLoadBinary(args[0]);
+  });
 }  // namespace runtime
 }  // namespace tvm

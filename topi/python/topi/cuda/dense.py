@@ -93,7 +93,7 @@ def schedule_dense(cfg, outs):
     outs = [outs] if isinstance(outs, tvm.tensor.Tensor) else outs
     s = tvm.create_schedule([x.op for x in outs])
     def _schedule(Dense):
-        num_thread = 1
+        num_thread = 2
         k = Dense.op.reduce_axis[0]
         ko, kf = s[Dense].split(k, factor=num_thread)
         DenseF = s.rfactor(Dense, kf)

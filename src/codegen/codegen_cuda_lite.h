@@ -39,8 +39,11 @@ class CodeGenCUDALite final : public CodeGenC {
   void VisitExpr_(const Ramp* op, std::ostream& os) final; // NOLINT(*)
   void VisitExpr_(const Broadcast* op, std::ostream& os) final; // NOLINT(*)
   void VisitExpr_(const FloatImm *op, std::ostream& os) final;
+  void VisitExpr_(const Load* op, std::ostream& os) final;  // NOLINT(*)
   void VisitStmt_(const Evaluate *op) final;
   void VisitStmt_(const ir::AttrStmt* op) final;
+  void VisitStmt_(const Allocate* op) final;
+  void VisitStmt_(const Store* op) final;
 
  private:
   // Whether global barrier is needed.
@@ -54,6 +57,7 @@ class CodeGenCUDALite final : public CodeGenC {
   bool enable_fp16_{false};
   // whether enable int8
   bool enable_int8_{false};
+  std::string tile_x_{"1"}, tile_y_{"1"};
 };
 
 }  // namespace codegen

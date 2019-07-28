@@ -30,8 +30,7 @@ Module HBMCModuleCreate(
     std::string data,
     std::string fmt,
     std::unordered_map<std::string, FunctionInfo> fmap,
-    std::string hbmc_source,
-    std::string file_name);
+    std::string hbmc_source);
 
 Module HBMCModuleLoadFile(const std::string& file_name,
                           const std::string& format);
