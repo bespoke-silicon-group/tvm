@@ -57,6 +57,7 @@ class CodeGenCUDALite final : public CodeGenC {
   bool enable_fp16_{false};
   // whether enable int8
   bool enable_int8_{false};
+  std::string tile_x_{"1"}, tile_y_{"1"};
 };
 
 }  // namespace codegen

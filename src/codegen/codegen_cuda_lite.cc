@@ -29,6 +29,11 @@ void CodeGenCUDALite::AddFunction(LoweredFunc f) {
   // TODO Temporarily remove the extern "C" __global__ thing
   //this->stream << "extern \"C\" __global__ ";
   //this->stream << "__attribute__";
+  
+  //std::string thread_extent_var_;
+  //thread_extent_var_ = GetUniqueName("thread_extent");
+  //this->stream << "/* " << thread_extent_var_ << " */\n";
+
   CodeGenC::AddFunction(f);
 }
 
@@ -43,8 +48,9 @@ std::string CodeGenCUDALite::Finish() {
 
   //decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, bsg_tiles_X-1,"
   //            << " 0, bsg_tiles_Y-1)\n";
-  decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, 2-1,"
-              << " 0, 1-1)\n";
+  //decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, 4-1, 0, 1-1)\n";
+  decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, "
+              << tile_x_ << "-1, 0, " << tile_y_ << "-1)\n";
 
   /*
   if (enable_fp16_) {
@@ -71,6 +77,25 @@ void CodeGenCUDALite::PrintCUDALiteKernelHead() {
 }
 
 void CodeGenCUDALite::VisitStmt_(const ir::AttrStmt* op) {
+  if (op->attr_key == ir::attr::thread_extent) {
+    //stream << "/* " << op->value << ", " << op->attr_key 
+    //       << ", " << op->node << " */\n";
+
+    IterVar iv(op->node.node_);
+    //stream << "/* (" << iv->var << ", " << iv->iter_type << ", " 
+    //       << iv->thread_tag <<  ") */\n";
+
+    std::ostringstream sstream;
+    sstream << PrintExpr(op->value);
+
+    if (iv->thread_tag == "threadIdx.x") {
+      tile_x_ = sstream.str();
+    }
+    else if (iv->thread_tag == "threadIdx.y") {
+      tile_y_ = sstream.str();
+    }
+  }
+
   if (!cuda_lite_flag_) {
     cuda_lite_flag_ = true;
 
@@ -378,8 +403,12 @@ void CodeGenCUDALite::VisitExpr_(const Load* op, std::ostream& os) {  // NOLINT(
   int lanes = op->type.lanes();
   // delcare type.
   if (op->type.lanes() == 1) {
-    // Trace
-    //os << "/*op->type.lanes() == 1*/";
+    std::ostringstream sstream;
+    this->PrintType(op->type, sstream);
+    std::string type_str = sstream.str();
+    if (type_str == "float32") {
+      type_str = "float";
+    }
 
     const Variable* buffer = op->buffer_var.as<Variable>();
     std::string scope;
@@ -388,7 +417,8 @@ void CodeGenCUDALite::VisitExpr_(const Load* op, std::ostream& os) {  // NOLINT(
         scope = alloc_storage_scope_.at(buffer);
 
     if (scope == "shared") {
-      os << "bsg_tile_group_shared_load_direct(" << GetVarID(buffer) << ", ";
+      os << "bsg_tile_group_shared_load_direct(" << type_str << ", "
+         << GetVarID(buffer) << ", ";
       PrintExpr(op->index, os);
       os << ")";
     }
@@ -448,8 +478,15 @@ void CodeGenCUDALite::VisitStmt_(const Store* op) {
   if (t.lanes() == 1) {
     std::string value = this->PrintExpr(op->value);
     std::string ref  = this->GetBufferRef(t, op->buffer_var.get(), op->index);
-    this->PrintIndent();
 
+    std::ostringstream sstream;
+    this->PrintType(op->value.type(), sstream);
+    std::string type_str = sstream.str();
+    if (type_str == "float32") {
+      type_str = "float";
+    }
+
+    this->PrintIndent();
     const Variable* buffer = op->buffer_var.as<Variable>();
     std::string scope;
 
@@ -457,7 +494,8 @@ void CodeGenCUDALite::VisitStmt_(const Store* op) {
         scope = alloc_storage_scope_.at(buffer);
 
     if (scope == "shared") {
-      stream << "bsg_tile_group_shared_store(" << GetVarID(buffer) << ", ";
+      stream << "bsg_tile_group_shared_store(" << type_str << ", " 
+             << GetVarID(buffer) << ", ";
       PrintExpr(op->index, stream);
       stream << ", " << value << ");\n";
     }
