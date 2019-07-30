@@ -20,69 +20,28 @@ a simple multilayer perceptron
 from __future__ import absolute_import
 from tvm import relay
 from .init import create_workload
+from . import layers
 
 def get_net(batch_size,
-            num_classes=10,
+            channels=16,
             image_shape=(1, 28, 28),
             dtype="float32"):
-    """Get network a simple multilayer perceptron.
 
-    batch_size : int
-        The batch size used in the model
-
-    num_classes : int, optional
-        Number of claseses
-
-    image_shape : tuple, optional
-        The input image shape
-
-    dtype : str, optional
-        The data type
-
-    Returns
-    -------
-    net : relay.Function
-        The dataflow.
-    """
     data_shape = (batch_size,) + image_shape
     data = relay.var("data",
                      shape=data_shape,
                      dtype=dtype)
-    conv = relay.nn.conv2d(data, relay.var("weight"), 
-                          kernel_size=(3, 3),
-                          padding=(1, 1),
-                          channels=16)
-    args = relay.ir_pass.free_vars(conv)
-    return relay.Function(args, conv)
+
+    conv2d = layers.conv2d(
+             data=data, channels=channels, kernel_size=(3, 3),
+             strides=(1, 1), padding=(1, 1), name="conv0")
+    args = relay.ir_pass.free_vars(conv2d)
+    return relay.Function(args, conv2d)
 
 
 def get_workload(batch_size,
-                 num_classes=10,
+                 channels=16,
                  image_shape=(1, 28, 28),
                  dtype="float32"):
-    """Get benchmark workload for a simple multilayer perceptron.
-
-    Parameters
-    ----------
-    batch_size : int
-        The batch size used in the model
-
-    num_classes : int, optional
-        Number of claseses
-
-    image_shape : tuple, optional
-        The input image shape
-
-    dtype : str, optional
-        The data type
-
-    Returns
-    -------
-    net : relay.Function
-        The dataflow.
-
-    params : dict of str to NDArray
-        The parameters.
-    """
-    net = get_net(batch_size, num_classes, image_shape, dtype)
+    net = get_net(batch_size, channels, image_shape, dtype)
     return create_workload(net)
