@@ -8,15 +8,17 @@ from hb import ir_pass
 
 dtype="float32"
 batch_size = 1
-num_classes = 10
-input_shape = (1, 28, 28)
+num_classes = 8
+image_shape = (1, 28, 28)
 #input_shape = (8)
-data_shape = (batch_size, ) + input_shape
-#data_shape = (batch_size, input_shape)
+data_shape = (batch_size, ) + image_shape
+#data_shape = (batch_size, image_shape)
 out_shape = (batch_size, num_classes)
 
 net, params = relay.testing.mlp.get_workload(
-        batch_size=batch_size)
+        batch_size=batch_size,
+        image_shape=image_shape,
+        num_classes=num_classes)
 
 # set show_meta_data=True if you want to show meta data
 print(net.astext(show_meta_data=False))
