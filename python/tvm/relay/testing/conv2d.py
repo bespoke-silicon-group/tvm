@@ -31,7 +31,6 @@ def get_net(batch_size,
     data = relay.var("data",
                      shape=data_shape,
                      dtype=dtype)
-
     conv2d = layers.conv2d(
              data=data, channels=channels, kernel_size=(3, 3),
              strides=(1, 1), padding=(1, 1), name="conv0")
