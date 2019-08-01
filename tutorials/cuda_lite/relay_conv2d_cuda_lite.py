@@ -9,9 +9,8 @@ from hb import ir_pass
 dtype="float"
 batch_size = 1
 num_channel = 16
-image_shape = (64, 32, 32)
+image_shape = (8, 32, 32)
 data_shape = (batch_size, ) + image_shape
-#out_shape = (batch_size, num_classes)
 out_shape = (batch_size, ) + (num_channel, ) + image_shape[1:]
 
 net, params = relay.testing.conv2d.get_workload(
@@ -23,13 +22,13 @@ net, params = relay.testing.conv2d.get_workload(
 # set show_meta_data=True if you want to show meta data
 print(net.astext(show_meta_data=False))
 
-opt_level = 3
-target = tvm.target.cuda()
+#opt_level = 3
+target = tvm.target.cuda_lite()
 #target = "llvm"
-with relay.build_config(opt_level=opt_level):
-    with relay.build_config():
-        with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
-            graph, lib, params = relay.build_module.build(
+#with relay.build_config(opt_level=opt_level):
+with relay.build_config():
+    with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
+        graph, lib, params = relay.build_module.build(
                 net, target, params=params)
 #exit()
 
@@ -39,7 +38,7 @@ with relay.build_config(opt_level=opt_level):
 # Now we can create graph runtime and run the module on Nvidia GPU.
 
 # create random input
-ctx = tvm.context("cuda", 0)
+ctx = tvm.context("cuda_lite", 0)
 #ctx = tvm.context("llvm", 0)
 data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
 # create module

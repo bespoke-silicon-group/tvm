@@ -8,8 +8,8 @@ from hb import ir_pass
 
 dtype="float"
 batch_size = 1
-num_neurons = 16
-input_shape = (1, 8, 8)
+num_neurons = 4
+input_shape = (4, 8, 8)
 data_shape = (batch_size, ) + input_shape
 out_shape = (batch_size, num_neurons)
 
