@@ -58,7 +58,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
     eva_t ptr;
     if (init_flag == true) {
       hb_mc_device_malloc(&HBMC_DEVICE_, nbytes, &ptr);
-      printf("allocate FPGA memory at addr: 0x%x\n", ptr);
+      printf("allocate FPGA memory at addr: 0x%x, for %d bytes\n", ptr, nbytes);
     }
     else
       LOG(FATAL) << "You should init hbmc device first";
@@ -100,7 +100,7 @@ class HBMCDeviceAPI final : public DeviceAPI {
         printf("copy from fpga mem addr: 0x%x ", 
                 reinterpret_cast<uint64_t*>((void*) from));
         printf("to host mem addr: 0x%x, ", reinterpret_cast<uint32_t*>(to));
-        printf("size %d\n", size);
+        printf("size %d bytes\n", size);
 
         if (hb_mc_device_memcpy(&HBMC_DEVICE_, to, 
             from, size, HB_MC_MEMCPY_TO_HOST) != HB_MC_SUCCESS)

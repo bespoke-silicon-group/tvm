@@ -22,7 +22,7 @@ from .. import generic
 
 
 
-@generic.schedule_adaptive_pool.register(["cuda", "gpu"])
+@generic.schedule_adaptive_pool.register(["cuda_lite", "cuda", "gpu"])
 def schedule_adaptive_pool(outs):
     """Schedule for adaptive_pool.
 
@@ -41,7 +41,8 @@ def schedule_adaptive_pool(outs):
     s = tvm.create_schedule([x.op for x in outs])
 
     def _schedule(Pool):
-        num_thread = 8
+        #num_thread = 8
+        num_thread = 2
         block_x = tvm.thread_axis("blockIdx.x")
         block_y = tvm.thread_axis("blockIdx.y")
         thread_x = tvm.thread_axis((0, num_thread), "threadIdx.x")
@@ -88,7 +89,7 @@ def schedule_adaptive_pool(outs):
     return s
 
 
-@generic.schedule_pool.register(["cuda", "gpu"])
+@generic.schedule_pool.register(["cuda_lite", "cuda", "gpu"])
 def schedule_pool(outs, layout):
     """Schedule for pool.
 

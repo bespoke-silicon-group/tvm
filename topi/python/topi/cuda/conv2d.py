@@ -23,7 +23,7 @@ from tvm.contrib import cudnn
 from .. import nn, generic
 from ..util import get_const_tuple, traverse_inline
 
-from .conv2d_direct import schedule_direct_cuda
+from .conv2d_direct import schedule_direct_cuda, schedule_direct_cuda_lite
 from .conv2d_winograd import winograd_cuda, schedule_winograd_cuda
 from .conv2d_int8 import conv2d_NCHWc_int8, schedule_conv2d_NCHWc_int8
 
@@ -117,7 +117,7 @@ def conv2d_cuda(cfg, data, kernel, strides, padding, dilation, layout='NCHW', ou
     raise ValueError("not support this layout {} yet".format(layout))
 
 
-@autotvm.register_topi_schedule(generic.schedule_conv2d_nchw, ["cuda", "gpu", "cuda_lite"],
+@autotvm.register_topi_schedule(generic.schedule_conv2d_nchw, ["cuda", "gpu"],
                                 ["direct", 'winograd', "int8"])
 def schedule_conv2d_nchw_cuda(cfg, outs):
     """TOPI schedule callback of conv2d for cuda gpu
@@ -150,6 +150,24 @@ def schedule_conv2d_nchw_cuda(cfg, outs):
             schedule_winograd_cuda(cfg, s, op.output(0), pre_computed=False)
         if op.tag == "conv2d_NCHWc_int8":
             schedule_conv2d_NCHWc_int8(cfg, s, op.output(0))
+
+    traverse_inline(s, outs[0].op, _callback)
+    return s
+
+
+@autotvm.register_topi_schedule(generic.schedule_conv2d_nchw, ["cuda_lite"], ["direct"])
+def schedule_conv2d_nchw_cuda_lite(cfg, outs):
+
+    target = tvm.target.current_target()
+    if 'cudnn' in target.libs:
+        return generic.schedule_extern(outs)
+
+    outs = [outs] if isinstance(outs, tvm.tensor.Tensor) else outs
+    s = tvm.create_schedule([x.op for x in outs])
+
+    def _callback(op):
+        if op.tag == 'conv2d_nchw':
+            schedule_direct_cuda_lite(cfg, s, op.output(0))
 
     traverse_inline(s, outs[0].op, _callback)
     return s

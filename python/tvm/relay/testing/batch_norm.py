@@ -14,28 +14,30 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Utilities for testing and benchmarks"""
-from __future__ import absolute_import as _abs
-
-from . import dense
-from . import max_pool2d
-from . import conv2d
-from . import relu
-from . import softmax
-from . import batch_norm
-from . import mlp
-from . import resnet
-from . import sdh_convnet
-from . import dqn
-from . import dcgan
-from . import mobilenet
-from . import lstm
-from . import inception_v3
-from . import squeezenet
-from . import vgg
-from . import densenet
-from . import yolo_detection
-
-from .config import ctx_list
+"""
+a simple multilayer perceptron
+"""
+from __future__ import absolute_import
+from tvm import relay
 from .init import create_workload
-from .nat import add_nat_definitions, count, make_nat_value, make_nat_expr
+from . import layers
+
+def get_net(batch_size=1,
+            input_shape=(4, 16, 16),
+            dtype="float32"):
+    data_shape = (batch_size, ) + input_shape
+    data = relay.var("data",
+                     shape=data_shape,
+                     dtype=dtype)
+    bn = layers.batch_norm_infer(data=data, epsilon=1e-5, name="bn")
+
+    args = relay.ir_pass.free_vars(bn)
+    return relay.Function(args, bn)
+
+
+def get_workload(batch_size,
+                 input_shape=(4, 16, 16),
+                 dtype="float32"):
+
+    net = get_net(batch_size, input_shape, dtype)
+    return create_workload(net)

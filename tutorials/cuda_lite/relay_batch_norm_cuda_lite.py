@@ -6,16 +6,14 @@ import tvm
 from tvm.contrib import graph_runtime
 from hb import ir_pass
 
-dtype="float"
+dtype="float32"
 batch_size = 1
-num_neurons = 4
-input_shape = (4, 8, 8)
+input_shape = (4, 16, 16)
 data_shape = (batch_size, ) + input_shape
-out_shape = (batch_size, num_neurons)
+out_shape = (batch_size, ) + input_shape
 
-net, params = relay.testing.dense.get_workload(
+net, params = relay.testing.batch_norm.get_workload(
         batch_size=batch_size, 
-        num_neurons=num_neurons,
         input_shape=input_shape,
         dtype=dtype)
 
@@ -30,7 +28,7 @@ with relay.build_config():
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
         graph, lib, params = relay.build_module.build(
             net, target, params=params)
-#exit()
+exit()
 
 #####################################################################
 # Run the generate library
@@ -51,22 +49,29 @@ module.run()
 # get output
 out = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 
+# Print first 10 elements of output
+#print(out.flatten()[0:10])
 #print(data)
 print(out.flatten())
 exit()
+
+######################################################################
+# Save and Load Compiled Module
+# -----------------------------
+# We can also save the graph, lib and parameters into files and load them
+# back in deploy environment.
+
+####################################################
 
 # save the graph, lib and params into separate files
 from tvm.contrib import util
 
 temp = util.tempdir()
 path_lib = temp.relpath("deploy_lib.tar")
-#path_lib = "./deploy_lib.tar"
 lib.export_library(path_lib)
 with open(temp.relpath("deploy_graph.json"), "w") as fo:
-#with open("./deploy_graph.json", "w") as fo:
     fo.write(graph)
 with open(temp.relpath("deploy_param.params"), "wb") as fo:
-#with open("./deploy_param.params", "wb") as fo:
     fo.write(relay.save_param_dict(params))
 print(temp.listdir())
 
@@ -74,22 +79,17 @@ print(temp.listdir())
 
 # load the module back.
 loaded_json = open(temp.relpath("deploy_graph.json")).read()
-#loaded_json = open("./deploy_graph.json").read()
 loaded_lib = tvm.module.load(path_lib)
 loaded_params = bytearray(open(temp.relpath("deploy_param.params"), "rb").read())
-#loaded_params = bytearray(open("./deploy_param.params", "rb").read())
-#input_data = tvm.nd.array(np.random.uniform(size=data_shape).astype("float32"))
+input_data = tvm.nd.array(np.random.uniform(size=data_shape).astype("float32"))
 
 module = graph_runtime.create(loaded_json, loaded_lib, ctx)
 module.load_params(loaded_params)
-module.set_input("data", data)
-#module.run(data=input_data)
-module.run()
+module.run(data=input_data)
 out_deploy = module.get_output(0).asnumpy()
 
 # Print first 10 elements of output
-#print(out_deploy.flatten()[0:10])
-print(out_deploy.flatten())
+print(out_deploy.flatten()[0:10])
 
 # check whether the output from deployed module is consistent with original one
 tvm.testing.assert_allclose(out_deploy, out, atol=1e-3)

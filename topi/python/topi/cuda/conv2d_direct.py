@@ -115,3 +115,40 @@ def schedule_direct_cuda(cfg, s, conv):
     N, CO, OH, OW = get_const_tuple(output.shape)
     _, KH, KW, CI = get_const_tuple(kernel.shape)
     cfg.add_flop(2 * N * OH * OW * CO * CI * KH * KW)
+
+
+def schedule_direct_cuda_lite(cfg, s, conv):
+    """schedule optimized for batch size = 1"""
+
+    ##### space definition begin #####
+    n, f, y, x = s[conv].op.axis
+    rc, ry, rx = s[conv].op.reduce_axis
+
+    pad_data, kernel = s[conv].op.input_tensors
+
+    s[pad_data].compute_inline()
+    if isinstance(kernel.op, tvm.tensor.ComputeOp) and 'dilate' in kernel.op.tag:
+        s[kernel].compute_inline()
+
+    if conv.op in s.outputs:
+        output = conv
+        #OL = s.cache_write(conv, 'local')
+    else:
+        output = s.outputs[0].output(0)
+        s[conv].set_scope('local')
+        #OL = conv
+
+    # tile and bind spatial axes
+    n, f, y, x = s[output].op.axis
+    kernel_scope, n = s[output].split(n, nparts=1)
+
+    s[output].bind(f, tvm.thread_axis("blockIdx.x"))
+    s[output].bind(y, tvm.thread_axis("threadIdx.y"))
+    s[output].bind(x, tvm.thread_axis("threadIdx.x"))
+
+    if conv.op not in s.outputs:
+        s[conv].compute_at(s[output], x)
+
+    N, CO, OH, OW = get_const_tuple(output.shape)
+    _, KH, KW, CI = get_const_tuple(kernel.shape)
+    cfg.add_flop(2 * N * OH * OW * CO * CI * KH * KW)

@@ -8,9 +8,12 @@ from hb import ir_pass
 
 dtype="float32"
 batch_size = 1
-input_shape = (1, 16, 16)
+width = 4
+input_shape = (2, width, width)
 data_shape = (batch_size, ) + input_shape
-out_shape = (batch_size, ) + input_shape
+out_shape = (batch_size, ) + (2, int(width/2), int(width/2))
+print(input_shape)
+print(out_shape)
 
 net, params = relay.testing.max_pool2d.get_workload(
         batch_size=batch_size, 
@@ -26,7 +29,7 @@ with relay.build_config(opt_level=opt_level):
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
         graph, lib, params = relay.build_module.build(
             net, target, params=params)
-exit()
+#exit()
 
 #####################################################################
 # Run the generate library
@@ -48,7 +51,7 @@ out = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 
 # Print first 10 elements of output
 #print(out.flatten()[0:10])
-print(data)
+#print(data)
 print(out.flatten())
 exit()
 
