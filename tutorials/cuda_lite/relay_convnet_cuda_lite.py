@@ -44,6 +44,7 @@ from tvm import relay
 from tvm.relay import testing
 import tvm
 from tvm.contrib import graph_runtime
+from hb import ir_pass
 
 ######################################################################
 # Define Neural Network in Relay
@@ -59,46 +60,32 @@ from tvm.contrib import graph_runtime
 # images of size 224 * 224. We can call the :any:`tvm.relay.expr.astext()`
 # to show the network structure.
 
+dtype="float"
 batch_size = 1
 num_class = 2
-image_shape = (3, 32, 32)
+image_shape = (3, 8, 8)
 data_shape = (batch_size,) + image_shape
 out_shape = (batch_size, num_class)
 
-net, params = relay.testing.sdh_convnet.get_workload()
+net, params = relay.testing.sdh_convnet.get_workload(
+              batch_size=batch_size,
+              num_classes=num_class,
+              image_shape=image_shape,
+              dtype=dtype)
 
 # set show_meta_data=True if you want to show meta data
 print(net.astext(show_meta_data=False))
+
+
+#opt_level = 3
+target = tvm.target.cuda_lite()
+#target = "llvm"
+#with relay.build_config(opt_level=opt_level):
+with relay.build_config():
+    with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
+        graph, lib, params = relay.build_module.build(
+                net, target, params=params)
 exit()
-
-######################################################################
-# Compilation
-# -----------
-# Next step is to compile the model using the Relay/TVM pipeline.
-# Users can specify the optimization level of the compilation.
-# Currently this value can be 0 to 3. The optimization passes include
-# operator fusion, pre-computation, layout transformation and so on.
-#
-# :any:`relay.build_module.build` returns three components: the execution graph in
-# json format, the TVM module library of compiled functions specifically
-# for this graph on the target hardware, and the parameter blobs of
-# the model. During the compilation, Relay does the graph-level
-# optimization while TVM does the tensor-level optimization, resulting
-# in an optimized runtime module for model serving.
-#
-# We'll first compile for Nvidia GPU. Behind the scene, `relay.build_module.build`
-# first does a number of graph-level optimizations, e.g. pruning, fusing, etc.,
-# then registers the operators (i.e. the nodes of the optimized graphs) to
-# TVM implementations to generate a `tvm.module`.
-# To generate the module library, TVM will first transfer the high level IR
-# into the lower intrinsic IR of the specified target backend, which is CUDA
-# in this example. Then the machine code will be generated as the module library.
-
-opt_level = 3
-target = tvm.target.cuda()
-with relay.build_config(opt_level=opt_level):
-    graph, lib, params = relay.build_module.build(
-        net, target, params=params)
 
 #####################################################################
 # Run the generate library
@@ -106,7 +93,7 @@ with relay.build_config(opt_level=opt_level):
 # Now we can create graph runtime and run the module on Nvidia GPU.
 
 # create random input
-ctx = tvm.gpu()
+ctx = tvm.context("cuda_lite", 0)
 data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
 # create module
 module = graph_runtime.create(graph, lib, ctx)
@@ -119,7 +106,8 @@ module.run()
 out = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 
 # Print first 10 elements of output
-print(out.flatten()[0:10])
+print(out.flatten())
+exit()
 
 ######################################################################
 # Save and Load Compiled Module
