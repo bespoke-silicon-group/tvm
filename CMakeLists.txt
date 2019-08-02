@@ -210,7 +210,8 @@ if(USE_HBMC OR USE_CUDA_LITE)
   list(APPEND RUNTIME_SRCS ${RUNTIME_HB_SRCS})
 
   # make sure you install the bsg_f1 library
-  set(HBMC_HBMC_LIBRARY "/usr/lib64/libbsg_manycore_runtime.so")
+  #set(HBMC_HBMC_LIBRARY ${BSG_F1_DIR} "/cl_manycore/libraries/libbsg_manycore_runtime.so")
+  string(CONCAT HBMC_HBMC_LIBRARY ${BSG_F1_DIR} "/cl_manycore/libraries/libbsg_manycore_runtime.so")
   list(APPEND TVM_RUNTIME_LINKER_LIBS ${HBMC_HBMC_LIBRARY})
 endif(USE_HBMC OR USE_CUDA_LITE)
 
