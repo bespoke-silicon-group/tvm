@@ -10,10 +10,12 @@ def block_unit(data,
                residual=True):
 
     conv1 = layers.conv2d(
-        data=data, channels=num_filter, kernel_size=(3, 3),
-        strides=stride, padding=(1, 1), name=name + '_conv1')
-    bn1 = layers.batch_norm_infer(data=conv1, epsilon=1e-5, name=name + '_bn1')
-    act1 = relay.nn.relu(data=bn1)
+            data=data, channels=num_filter, kernel_size=(3, 3),
+            strides=stride, padding=(1, 1), name=name + '_conv1')
+    #bn1 = layers.batch_norm_infer(data=conv1, epsilon=1e-5, name=name + '_bn1')
+    #act1 = relay.nn.relu(data=bn1)
+    act1 = relay.nn.relu(data=conv1)
+    #act1 = conv1
 
     if residual:
         shortcut = layers.conv2d(
@@ -38,18 +40,18 @@ def sdh_convnet(units,
     body = block_unit(data, filter_list[0], (1, 1), name='block0', residual=False)
     body = block_unit(body, filter_list[1], (1, 1), name='block1', residual=True)
     body = relay.nn.max_pool2d(data=body, pool_size=(2, 2), strides=(2, 2))
-
     body = block_unit(body, filter_list[2], (1, 1), name='block2', residual=True)
     body = relay.nn.max_pool2d(data=body, pool_size=(2, 2), strides=(2, 2))
-
     body = block_unit(body, filter_list[3], (1, 1), name='block3', residual=True)
     
-    # Although kernel is not used here when global_pool=True, we should put one
-    pool1 = relay.nn.global_avg_pool2d(data=body)
+    pool1 = relay.nn.global_max_pool2d(data=body)
     flat = relay.nn.batch_flatten(data=pool1)
-    fc1 = layers.dense_add_bias(data=flat, units=num_classes, name='fc1')
+    #fc1 = layers.dense_add_bias(data=flat, units=num_classes, name='fc1')
+    fc1 = relay.nn.dense(flat, relay.var("fc1_weight"), units=num_classes)
     net = relay.nn.softmax(data=fc1)
-    return relay.Function(relay.ir_pass.free_vars(net), net)
+
+    args = relay.ir_pass.free_vars(net)
+    return relay.Function(args, net)
 
 
 def get_net(batch_size,

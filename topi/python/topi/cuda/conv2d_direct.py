@@ -146,6 +146,9 @@ def schedule_direct_cuda_lite(cfg, s, conv):
     s[output].bind(y, tvm.thread_axis("threadIdx.y"))
     s[output].bind(x, tvm.thread_axis("threadIdx.x"))
 
+    if conv.op not in s.outputs:
+        s[conv].compute_at(s[output], x)
+
     N, CO, OH, OW = get_const_tuple(output.shape)
     _, KH, KW, CI = get_const_tuple(kernel.shape)
     cfg.add_flop(2 * N * OH * OW * CO * CI * KH * KW)

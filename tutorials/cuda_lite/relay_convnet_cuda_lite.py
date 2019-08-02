@@ -63,7 +63,7 @@ from hb import ir_pass
 dtype="float"
 batch_size = 1
 num_class = 2
-image_shape = (3, 8, 8)
+image_shape = (3, 32, 32)
 data_shape = (batch_size,) + image_shape
 out_shape = (batch_size, num_class)
 
@@ -85,7 +85,7 @@ with relay.build_config():
     with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
         graph, lib, params = relay.build_module.build(
                 net, target, params=params)
-exit()
+#exit()
 
 #####################################################################
 # Run the generate library
