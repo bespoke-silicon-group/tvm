@@ -12,9 +12,9 @@ def block_unit(data,
     conv1 = layers.conv2d(
             data=data, channels=num_filter, kernel_size=(3, 3),
             strides=stride, padding=(1, 1), name=name + '_conv1')
-    #bn1 = layers.batch_norm_infer(data=conv1, epsilon=1e-5, name=name + '_bn1')
-    #act1 = relay.nn.relu(data=bn1)
-    act1 = relay.nn.relu(data=conv1)
+    bn1 = layers.batch_norm_infer(data=conv1, epsilon=1e-5, name=name + '_bn1')
+    act1 = relay.nn.relu(data=bn1)
+    #act1 = relay.nn.relu(data=conv1)
     #act1 = conv1
 
     if residual:
