@@ -8,7 +8,7 @@ from hb import ir_pass
 
 dtype="float32"
 batch_size = 1
-input_shape = (1, 4, 4)
+input_shape = (2, 4, 4)
 data_shape = (batch_size, ) + input_shape
 out_shape = (batch_size, ) + input_shape
 
@@ -49,7 +49,7 @@ out = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 # Print first 10 elements of output
 #print(out.flatten()[0:10])
 print(data)
-print(out.flatten())
+print(out)
 exit()
 
 ######################################################################

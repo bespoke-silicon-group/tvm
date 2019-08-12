@@ -1,43 +1,3 @@
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-"""
-.. _tutorial-relay-quick-start:
-
-Quick Start Tutorial for Compiling Deep Learning Models
-======================================================
-**Author**: `Yao Wang <https://github.com/kevinthesun>`_, `Truman Tian <https://github.com/SiNZeRo>`_
-
-This example shows how to build a neural network with Relay python frontend and
-generates a runtime library for Nvidia GPU with TVM.
-Notice that you need to build TVM with cuda and llvm enabled.
-"""
-
-######################################################################
-# Overview for Supported Hardware Backend of TVM
-# ----------------------------------------------
-# The image below shows hardware backend currently supported by TVM:
-#
-# .. image:: https://github.com/dmlc/web-data/raw/master/tvm/tutorial/tvm_support_list.png
-#      :align: center
-#      :scale: 100%
-#
-# In this tutorial, we'll choose cuda and llvm as target backends.
-# To begin with, let's import Relay and TVM.
-
 import numpy as np
 
 from tvm import relay
@@ -45,70 +5,81 @@ from tvm.relay import testing
 import tvm
 from tvm.contrib import graph_runtime
 from hb import ir_pass
-
-######################################################################
-# Define Neural Network in Relay
-# -----------------------------
-# First, let's define a neural network with relay python frontend.
-# For simplicity, we'll use pre-defined resnet-18 network in Relay.
-# Parameters are initialized with Xavier initializer.
-# Relay also supports other model formats such as MXNet, CoreML, ONNX and
-# Tensorflow.
-#
-# In this tutorial, we assume we will do inference on our device
-# and the batch size is set to be 1. Input images are RGB color
-# images of size 224 * 224. We can call the :any:`tvm.relay.expr.astext()`
-# to show the network structure.
+import time
 
 dtype="float"
+network_scale = 1
 batch_size = 1
 num_class = 2
-image_shape = (3, 32, 32)
+image_shape = (3, 8, 8)
 data_shape = (batch_size,) + image_shape
+#data_shape = (batch_size, num_class)
 out_shape = (batch_size, num_class)
+#out_shape = (batch_size, ) + (1, 4, 4)
+
+def print_stmt(stmt):
+    print(stmt)
+
+    return stmt
 
 net, params = relay.testing.sdh_convnet.get_workload(
               batch_size=batch_size,
               num_classes=num_class,
               image_shape=image_shape,
+              scale=network_scale,
               dtype=dtype)
 
 # set show_meta_data=True if you want to show meta data
 print(net.astext(show_meta_data=False))
 
+data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
 
-#opt_level = 3
+opt_level = 3
 target = tvm.target.cuda_lite()
-#target = "llvm"
-#with relay.build_config(opt_level=opt_level):
-with relay.build_config():
-    with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
-        graph, lib, params = relay.build_module.build(
+with relay.build_config(opt_level=opt_level):
+    #with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
+    with tvm.build_config(add_lower_pass=[(1, print_stmt)]):
+        graph, lib, _params = relay.build_module.build(
                 net, target, params=params)
+
+        # create random input
+        ctx = tvm.context("cuda_lite", 0)
+        # create module
+        module = graph_runtime.create(graph, lib, ctx)
+        # set input and parameters
+        module.set_input("data", data)
+        module.set_input(**_params)
+        # run
+        module.run()
+        # get output
+        out_cuda_lite = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
+
+        print("CUDA-Lite Outputs:")
+        print(out_cuda_lite.flatten())
 #exit()
 
-#####################################################################
-# Run the generate library
-# ------------------------
-# Now we can create graph runtime and run the module on Nvidia GPU.
+target = "llvm"
+with relay.build_config(opt_level=opt_level):
+    graph, lib, _params = relay.build_module.build(net, target, params=params)
 
-# create random input
-ctx = tvm.context("cuda_lite", 0)
-data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
-# create module
-module = graph_runtime.create(graph, lib, ctx)
-# set input and parameters
-module.set_input("data", data)
-module.set_input(**params)
-# run
-module.run()
-# get output
-out = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
+    ctx = tvm.context(target, 0)
+    # create module
+    module = graph_runtime.create(graph, lib, ctx)
+    # set input and parameters
+    module.set_input("data", data)
+    module.set_input(**_params)
+    # run
+    module.run()
+    # get output
+    out_cpu = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 
-# Print first 10 elements of output
-print(out.flatten())
+    print("CPU Outputs:")
+    print(out_cpu.flatten())
+
+if not tvm.testing.assert_allclose(out_cuda_lite, out_cpu, rtol=1e-3, atol=1e-2):
+    print("CUDA-Lite RESULTS MATCH CPU RESULTS (WITHIN TOLERANCE)")
+
 exit()
-
 ######################################################################
 # Save and Load Compiled Module
 # -----------------------------
@@ -130,6 +101,7 @@ with open(temp.relpath("deploy_param.params"), "wb") as fo:
 print(temp.listdir())
 
 ####################################################
+ctx = tvm.context("cuda_lite", 0)
 
 # load the module back.
 loaded_json = open(temp.relpath("deploy_graph.json")).read()
@@ -143,7 +115,7 @@ module.run(data=input_data)
 out_deploy = module.get_output(0).asnumpy()
 
 # Print first 10 elements of output
-print(out_deploy.flatten()[0:10])
+print(out_deploy.flatten())
 
 # check whether the output from deployed module is consistent with original one
 tvm.testing.assert_allclose(out_deploy, out, atol=1e-3)
