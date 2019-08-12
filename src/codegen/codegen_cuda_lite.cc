@@ -417,10 +417,14 @@ void CodeGenCUDALite::VisitExpr_(const Load* op, std::ostream& os) {  // NOLINT(
         scope = alloc_storage_scope_.at(buffer);
 
     if (scope == "shared") {
+      /*
       os << "bsg_tile_group_shared_load_direct(" << type_str << ", "
          << GetVarID(buffer) << ", ";
       PrintExpr(op->index, os);
       os << ")";
+      */
+      std::string ref = GetBufferRef(op->type, op->buffer_var.get(), op->index);
+      os << ref;
     }
     else {
       std::string ref = GetBufferRef(op->type, op->buffer_var.get(), op->index);
@@ -494,10 +498,13 @@ void CodeGenCUDALite::VisitStmt_(const Store* op) {
         scope = alloc_storage_scope_.at(buffer);
 
     if (scope == "shared") {
+      /*
       stream << "bsg_tile_group_shared_store(" << type_str << ", " 
              << GetVarID(buffer) << ", ";
       PrintExpr(op->index, stream);
       stream << ", " << value << ");\n";
+      */
+      stream << ref << " = " << value << ";\n";
     }
     else {
       stream << ref << " = " << value << ";\n";
@@ -565,9 +572,14 @@ void CodeGenCUDALite::VisitStmt_(const Allocate* op) {
     std::string scope = alloc_storage_scope_.at(buffer);
     
     if (scope == "shared") {
+      /*
       stream << "bsg_tile_group_shared_mem("; 
       PrintType(op->type, stream);
       stream << ", " << vid << ", " << constant_size << ");\n";
+      */
+      PrintType(op->type, stream);
+      stream << ' '<< vid << '['
+             << constant_size << "];\n";
     }
     else {
       //stream << "/*CodeGenCUDALite::VisitStmt_(const Allocate* op)*/";
