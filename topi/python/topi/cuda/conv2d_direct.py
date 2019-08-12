@@ -140,14 +140,16 @@ def schedule_direct_cuda_lite(cfg, s, conv):
 
     # tile and bind spatial axes
     n, f, y, x = s[output].op.axis
-    kernel_scope, n = s[output].split(n, nparts=1)
+    ox, tx = s[output].split(x, nparts=2)
+    oy, ty = s[output].split(y, nparts=2)
+    #kernel_scope, n = s[output].split(n, nparts=1)
 
     s[output].bind(f, tvm.thread_axis("blockIdx.x"))
-    s[output].bind(y, tvm.thread_axis("threadIdx.y"))
-    s[output].bind(x, tvm.thread_axis("threadIdx.x"))
+    s[output].bind(oy, tvm.thread_axis("threadIdx.y"))
+    s[output].bind(ox, tvm.thread_axis("threadIdx.x"))
 
     if conv.op not in s.outputs:
-        s[conv].compute_at(s[output], x)
+        s[conv].compute_at(s[output], tx)
 
     N, CO, OH, OW = get_const_tuple(output.shape)
     _, KH, KW, CI = get_const_tuple(kernel.shape)
