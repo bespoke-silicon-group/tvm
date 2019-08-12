@@ -46,7 +46,6 @@ def sdh_convnet(units,
     
     pool1 = relay.nn.global_max_pool2d(data=body)
     flat = relay.nn.batch_flatten(data=pool1)
-    #fc1 = layers.dense_add_bias(data=flat, units=num_classes, name='fc1')
     fc1 = relay.nn.dense(flat, relay.var("fc1_weight"), units=num_classes)
     net = relay.nn.softmax(data=fc1)
 
@@ -58,6 +57,7 @@ def get_net(batch_size,
             num_classes,
             num_layers=4,
             image_shape=(3, 32, 32),
+            scale=0,
             dtype="float32",
             **kwargs):
     """
@@ -69,7 +69,11 @@ def get_net(batch_size,
 
     num_stages = 4
     units = [1, 1, 1, 1]
-    filter_list = [16, 32, 64, 128]
+
+    if scale == 0:
+        filter_list = [4, 8, 16, 32]
+    elif scale == 1:
+        filter_list = [16, 32, 64, 128]
 
     return sdh_convnet(units=units,
                   num_stages=num_stages,
