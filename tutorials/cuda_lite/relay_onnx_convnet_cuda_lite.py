@@ -18,7 +18,7 @@ data_shape = (batch_size,) + image_shape
 out_shape = (batch_size, num_class)
 #out_shape = (batch_size, ) + (1, 4, 4)
 
-model_path = "/home/centos/sdh/convnet/CIFAR2Net_small.onnx"
+model_path = "./convnet.onnx"
 onnx_model = onnx.load(model_path)
 
 input_name = 'input.1'
@@ -37,8 +37,7 @@ with relay.build_config(opt_level=3):
 
     intrp = relay.build_module.create_executor('graph', mod, ctx, target)
     cuda_lite_output = intrp.evaluate()(tvm.nd.array(data), **params).asnumpy()
-    print("CUDA-Lite Outputs:")
-    print(cuda_lite_output.flatten())
+#exit()
 
 # run on cpu
 with relay.build_config(opt_level=3):
@@ -47,9 +46,12 @@ with relay.build_config(opt_level=3):
 
     intrp = relay.build_module.create_executor('graph', mod, ctx, target)
     cpu_output = intrp.evaluate()(tvm.nd.array(data), **params).asnumpy()
-    print("CPU Outputs:")
-    print(cpu_output.flatten())
 
+print("CUDA-Lite Outputs:")
+print(cuda_lite_output.flatten())
+
+print("CPU Outputs:")
+print(cpu_output.flatten())
 # compare the results from cpu and manycore
 if not tvm.testing.assert_allclose(cuda_lite_output, cpu_output, rtol=1e-3, atol=1e-2):
     print("CUDA-Lite RESULTS MATCH CPU RESULTS (WITHIN TOLERANCE)")

@@ -8,7 +8,7 @@ from hb import ir_pass
 import time
 
 dtype="float"
-network_scale = 1
+network_scale = 0
 batch_size = 1
 num_class = 2
 image_shape = (3, 8, 8)
@@ -31,11 +31,13 @@ net, params = relay.testing.sdh_convnet.get_workload(
 
 # set show_meta_data=True if you want to show meta data
 print(net.astext(show_meta_data=False))
+#exit()
 
 data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
 
 opt_level = 3
 target = tvm.target.cuda_lite()
+cuda_lite_start = time.time()
 with relay.build_config(opt_level=opt_level):
     #with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
     with tvm.build_config(add_lower_pass=[(1, print_stmt)]):
@@ -54,11 +56,11 @@ with relay.build_config(opt_level=opt_level):
         # get output
         out_cuda_lite = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 
-        print("CUDA-Lite Outputs:")
-        print(out_cuda_lite.flatten())
+cuda_lite_end = time.time()
 #exit()
 
 target = "llvm"
+cpu_start = time.time()
 with relay.build_config(opt_level=opt_level):
     graph, lib, _params = relay.build_module.build(net, target, params=params)
 
@@ -73,8 +75,15 @@ with relay.build_config(opt_level=opt_level):
     # get output
     out_cpu = module.get_output(0, tvm.nd.empty(out_shape)).asnumpy()
 
-    print("CPU Outputs:")
-    print(out_cpu.flatten())
+cpu_end = time.time()
+
+print("CUDA-Lite Outputs:")
+print(out_cuda_lite.flatten())
+print("CUDA-Lite Build + Run time: %f" % (cuda_lite_end - cuda_lite_start))
+
+print("CPU Outputs:")
+print(out_cpu.flatten())
+print("CPU Build + Run time: %f" % (cpu_end - cpu_start))
 
 if not tvm.testing.assert_allclose(out_cuda_lite, out_cpu, rtol=1e-3, atol=1e-2):
     print("CUDA-Lite RESULTS MATCH CPU RESULTS (WITHIN TOLERANCE)")
