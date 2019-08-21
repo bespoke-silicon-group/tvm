@@ -4,7 +4,9 @@ from tvm import relay
 from tvm.relay import testing
 import tvm
 from tvm.contrib import graph_runtime
-from hb import ir_pass
+from tvm.contrib.download import download_testdata
+from PIL import Image
+#from hb import ir_pass
 import time
 
 dtype="float"
@@ -22,6 +24,17 @@ def print_stmt(stmt):
 
     return stmt
 
+img_url = 'https://github.com/dmlc/mxnet.js/blob/master/data/cat.png?raw=true'
+img_path = download_testdata(img_url, 'cat.png', module='data')
+img = Image.open(img_path).resize((8, 8))
+x = np.array(img)
+x = np.moveaxis(x, 2, 0)
+x = x/255
+x = np.array(x)[np.newaxis, :, :, :]
+#img_ycbcr = img.convert("YCbCr")  # convert to YCbCr
+#img_y, img_cb, img_cr = img_ycbcr.split()
+#x = np.array(img_y)[np.newaxis, np.newaxis, :, :]
+
 net, params = relay.testing.sdh_convnet.get_workload(
               batch_size=batch_size,
               num_classes=num_class,
@@ -33,7 +46,7 @@ net, params = relay.testing.sdh_convnet.get_workload(
 print(net.astext(show_meta_data=False))
 #exit()
 
-data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
+#data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
 
 opt_level = 3
 target = tvm.target.cuda_lite()
@@ -49,7 +62,7 @@ with relay.build_config(opt_level=opt_level):
         # create module
         module = graph_runtime.create(graph, lib, ctx)
         # set input and parameters
-        module.set_input("data", data)
+        module.set_input("data", x.astype("float32"))
         module.set_input(**_params)
         # run
         module.run()
@@ -68,7 +81,7 @@ with relay.build_config(opt_level=opt_level):
     # create module
     module = graph_runtime.create(graph, lib, ctx)
     # set input and parameters
-    module.set_input("data", data)
+    module.set_input("data", x.astype("float32"))
     module.set_input(**_params)
     # run
     module.run()

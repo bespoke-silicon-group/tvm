@@ -5,6 +5,8 @@ from tvm import relay
 from tvm.relay import testing
 import tvm
 from tvm.contrib import graph_runtime
+from tvm.contrib.download import download_testdata
+from PIL import Image
 from hb import ir_pass
 import time
 
@@ -18,7 +20,8 @@ data_shape = (batch_size,) + image_shape
 out_shape = (batch_size, num_class)
 #out_shape = (batch_size, ) + (1, 4, 4)
 
-model_path = "./convnet.onnx"
+#model_path = "/home/centos/sdh/convnet/conv.onnx"
+model_path = "./conv.onnx"
 onnx_model = onnx.load(model_path)
 
 input_name = 'input.1'
@@ -28,7 +31,18 @@ mod, params = relay.frontend.from_onnx(onnx_model, shape_dict)
 print(mod.astext(show_meta_data=False))
 #exit()
 
-data = np.random.uniform(-1, 1, size=(1, 3, 8, 8)).astype("float32")
+#data = np.random.uniform(-1, 1, size=(1, 3, 8, 8)).astype("float32")
+img_url = 'https://github.com/dmlc/mxnet.js/blob/master/data/cat.png?raw=true'
+img_path = download_testdata(img_url, 'cat.png', module='data')
+img = Image.open(img_path).resize((8, 8))
+#img_ycbcr = img.convert("YCbCr")  # convert to YCbCr
+#img_y, img_cb, img_cr = img_ycbcr.split()
+#x = np.array(img_y)[np.newaxis, np.newaxis, :, :]
+#x = x/255
+x = np.array(img)
+x = np.moveaxis(x, 2, 0)
+x = x/255
+x = np.array(x)[np.newaxis, :, :, :]
 
 # run on manycore
 with relay.build_config(opt_level=3):
@@ -36,7 +50,7 @@ with relay.build_config(opt_level=3):
     target = tvm.target.cuda_lite()
 
     intrp = relay.build_module.create_executor('graph', mod, ctx, target)
-    cuda_lite_output = intrp.evaluate()(tvm.nd.array(data), **params).asnumpy()
+    cuda_lite_output = intrp.evaluate()(tvm.nd.array(x.astype("float32")), **params).asnumpy()
 #exit()
 
 # run on cpu
@@ -45,7 +59,7 @@ with relay.build_config(opt_level=3):
     target = 'llvm'
 
     intrp = relay.build_module.create_executor('graph', mod, ctx, target)
-    cpu_output = intrp.evaluate()(tvm.nd.array(data), **params).asnumpy()
+    cpu_output = intrp.evaluate()(tvm.nd.array(x.astype("float32")), **params).asnumpy()
 
 print("CUDA-Lite Outputs:")
 print(cuda_lite_output.flatten())
