@@ -44,13 +44,13 @@ std::string CodeGenCUDALite::Finish() {
 
   decl_stream << "#define BSG_TILE_GROUP_X_DIM bsg_tiles_X\n";
   decl_stream << "#define BSG_TILE_GROUP_Y_DIM bsg_tiles_Y\n";
-  decl_stream << "#include \"bsg_tile_group_barrier.h\"\n";
+  //decl_stream << "#include \"bsg_tile_group_barrier.h\"\n";
 
   //decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, bsg_tiles_X-1,"
   //            << " 0, bsg_tiles_Y-1)\n";
   //decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, 4-1, 0, 1-1)\n";
-  decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, "
-              << tile_x_ << "-1, 0, " << tile_y_ << "-1)\n";
+  //decl_stream << "INIT_TILE_GROUP_BARRIER(r_barrier, c_barrier, 0, "
+              //<< tile_x_ << "-1, 0, " << tile_y_ << "-1)\n";
 
   /*
   if (enable_fp16_) {
