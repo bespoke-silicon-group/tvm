@@ -190,8 +190,12 @@ class HBMCWrappedFunc {
     size_t num_void_args = thread_axis_cfg_.base();
     uint32_t *k_argv = new uint32_t[num_void_args];
 
-    for (size_t i = 0; i < num_void_args; i++)
+    printf("kernel argv values:");
+    for (size_t i = 0; i < num_void_args; i++) { 
       k_argv[i] = *(uint32_t*)void_args[i];
+      printf(" 0x%x", k_argv[i]);
+    }
+    printf("\n");
 
     std::cout << "lunch kernel " << func_name_ << "() on hammerblade manycore"<< std::endl;
 

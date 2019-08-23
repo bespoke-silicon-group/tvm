@@ -31,13 +31,16 @@ class HBMCDeviceAPI final : public DeviceAPI {
       std::cout << "Call HBMCDeviceAPI::SetDevice(), Initializing HBMC device...\n";
 
       hb_mc_device_t device;
-      char elf_path[] = "cuda_lite_kernel.hbmc";
       if (hb_mc_device_init(&HBMC_DEVICE_, "tvm_hb", 0) != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize device.";
       
       ctx.device_id = HBMC_DEVICE_.mc->id;
 
-      if (hb_mc_device_program_init(&HBMC_DEVICE_, elf_path, "tvm_hb", 0) != HB_MC_SUCCESS)
+      const char* tvm_home = std::getenv("TVM_HOME");
+      std::string elf_path = std::string(tvm_home) + "/hb/cuda_lite_compile/"
+                             + "main.riscv";
+      if (hb_mc_device_program_init(&HBMC_DEVICE_, elf_path.c_str(), "tvm_hb", 0) 
+          != HB_MC_SUCCESS)
         LOG(FATAL) << "could not initialize program.";
 
       init_flag = true;
