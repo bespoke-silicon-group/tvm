@@ -1,11 +1,34 @@
-main.riscv: 
-	cp cuda_lite_kernel.c $(BSG_MANYCORE_DIR)/software/spmd/bsg_cuda_lite_runtime/tvm/
-	$(MAKE) -C $(BSG_MANYCORE_DIR)/software/spmd/bsg_cuda_lite_runtime/tvm/ $@
-	cp $(BSG_MANYCORE_DIR)/software/spmd/bsg_cuda_lite_runtime/tvm/$@ .
+bsg_global_X ?= $(bsg_tiles_X)
+bsg_global_Y ?= $(bsg_tiles_Y)+1
+
+bsg_tiles_org_X ?= 0
+bsg_tiles_org_Y ?= 1
+
+bsg_tiles_X ?= 2
+bsg_tiles_Y ?= 2
+
+# Chech if it's on AWS instance
+ifneq (,$(findstring us-west-2.compute.internal, $(HOSTNAME)))
+	IGNORE_CADENV=1
+endif
+
+BSG_NEWLIB=0
+
+all: main.run
+
+OBJECT_FILES=main.o bsg_set_tile_x_y.o bsg_printf.o cuda_lite_kernel.o
+CRT=$(BSG_MANYCORE_DIR)/software/spmd/common/crt.o
+
+include $(BSG_MANYCORE_DIR)/software/spmd/Makefile.include
+
+main.riscv: $(OBJECT_FILES) $(SPMD_COMMON_OBJECTS) $(CRT)
+	$(RISCV_LINK) $(OBJECT_FILES) $(SPMD_COMMON_OBJECTS) -o $@ $(RISCV_LINK_OPTS)
+
+main.o: Makefile
+
+include $(BSG_MANYCORE_DIR)/software/mk/Makefile.tail_rules
 
 .Phony: clean
 
 clean:
 	rm -f *.riscv *.o *.log
-	$(MAKE) -C $(BSG_MANYCORE_DIR)/software/spmd/bsg_cuda_lite_runtime/tvm/ clean
-
