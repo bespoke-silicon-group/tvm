@@ -44,19 +44,16 @@ if tgt == "cuda_lite":
     print(dev_module.get_source())
 
 ctx = tvm.context(tgt, 0)
-#
-n = 32
-np.random.seed(int(time.time()))
-#a = tvm.nd.array(np.random.randint(10, size=n).astype(A.dtype), ctx)
+n = 32768*2*2
+#np.random.seed(int(time.time()))
 a = tvm.nd.array(np.random.uniform(-1, 1, size=n).astype("float32"), ctx)
 print(a)
-#b = tvm.nd.array(np.random.randint(10, size=n).astype(B.dtype), ctx)
 b = tvm.nd.array(np.random.uniform(-1, 1, size=n).astype("float32"), ctx)
 print(b)
 c = tvm.nd.array(np.zeros(1, dtype=C.dtype), ctx)
 fdot(a, b, c)
 print(c)
 print(sum(a.asnumpy()*b.asnumpy()))
-if not tvm.testing.assert_allclose(c.asnumpy(), np.sum(a.asnumpy()*b.asnumpy()), rtol=1e-03):
+if not tvm.testing.assert_allclose(c.asnumpy(), np.sum(a.asnumpy()*b.asnumpy()), rtol=1e-05):
     print("CUDA-Lite RESULTS MATCH CPU RESULTS (WITHIN TOLERANCE)")
 
