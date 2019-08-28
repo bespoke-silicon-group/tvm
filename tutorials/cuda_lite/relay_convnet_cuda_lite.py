@@ -11,23 +11,22 @@ import time
 import sys
 
 dtype="float32"
-network_scale = 2
+network_scale = 0
 batch_size = 1
 num_class = 2
-image_shape = (3, 4, 4)
+image_shape = (3, 16, 16)
 data_shape = (batch_size,) + image_shape
 #data_shape = (batch_size, num_class)
-#out_shape = (batch_size, num_class)
-out_shape = (batch_size, ) + (3, 2, 2)
+out_shape = (batch_size, num_class)
+#out_shape = (batch_size, ) + (32, 16, 16)
 
 def print_stmt(stmt):
     print(stmt)
-
     return stmt
 
 img_url = 'https://github.com/dmlc/mxnet.js/blob/master/data/cat.png?raw=true'
 img_path = download_testdata(img_url, 'cat.png', module='data')
-img = Image.open(img_path).resize((4, 4))
+img = Image.open(img_path).resize((16, 16))
 x = np.array(img)
 x = np.moveaxis(x, 2, 0)
 x = np.array(x)[np.newaxis, :, :, :]
@@ -47,8 +46,6 @@ net, params = relay.testing.sdh_convnet.get_workload(
 # set show_meta_data=True if you want to show meta data
 print(net.astext(show_meta_data=False))
 #exit()
-
-#data = np.random.uniform(-1, 1, size=data_shape).astype("float32")
 
 opt_level = 3
 target = tvm.target.cuda_lite()
@@ -100,50 +97,7 @@ print("CPU Outputs:")
 print(out_cpu.flatten())
 print("CPU Build + Run time: %f" % (cpu_end - cpu_start))
 
-print(np.max(out_cuda_lite.flatten()), np.min(out_cuda_lite.flatten()))
-print(np.max(out_cpu.flatten()), np.min(out_cpu.flatten()))
-#print("Setdiff1d:")
-#print(np.setdiff1d(out_cuda_lite.flatten(), out_cpu.flatten()))
 if not tvm.testing.assert_allclose(out_cuda_lite.flatten(), out_cpu.flatten(), rtol=1e-3, atol=1e-2):
     print("CUDA-Lite RESULTS MATCH CPU RESULTS (WITHIN TOLERANCE)")
 
 exit()
-######################################################################
-# Save and Load Compiled Module
-# -----------------------------
-# We can also save the graph, lib and parameters into files and load them
-# back in deploy environment.
-
-####################################################
-
-# save the graph, lib and params into separate files
-from tvm.contrib import util
-
-temp = util.tempdir()
-path_lib = temp.relpath("deploy_lib.tar")
-lib.export_library(path_lib)
-with open(temp.relpath("deploy_graph.json"), "w") as fo:
-    fo.write(graph)
-with open(temp.relpath("deploy_param.params"), "wb") as fo:
-    fo.write(relay.save_param_dict(params))
-print(temp.listdir())
-
-####################################################
-ctx = tvm.context("cuda_lite", 0)
-
-# load the module back.
-loaded_json = open(temp.relpath("deploy_graph.json")).read()
-loaded_lib = tvm.module.load(path_lib)
-loaded_params = bytearray(open(temp.relpath("deploy_param.params"), "rb").read())
-input_data = tvm.nd.array(np.random.uniform(size=data_shape).astype("float32"))
-
-module = graph_runtime.create(loaded_json, loaded_lib, ctx)
-module.load_params(loaded_params)
-module.run(data=input_data)
-out_deploy = module.get_output(0).asnumpy()
-
-# Print first 10 elements of output
-print(out_deploy.flatten())
-
-# check whether the output from deployed module is consistent with original one
-tvm.testing.assert_allclose(out_deploy, out, atol=1e-3)
