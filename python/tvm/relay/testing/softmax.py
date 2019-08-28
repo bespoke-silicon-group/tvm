@@ -22,10 +22,9 @@ from tvm import relay
 from .init import create_workload
 
 def get_net(batch_size=1,
-            input_shape=(1, 8, 8),
+            input_shape=16,
             dtype="float32"):
 
-    #data_shape = (batch_size, ) + input_shape
     data_shape = (batch_size, input_shape)
     data = relay.var("data",
                      shape=data_shape,
@@ -36,7 +35,7 @@ def get_net(batch_size=1,
 
 
 def get_workload(batch_size,
-                 input_shape=(1, 8, 8),
+                 input_shape=16,
                  dtype="float32"):
 
     net = get_net(batch_size, input_shape, dtype)
