@@ -31,6 +31,7 @@
 # - /path/to/cuda: use specific path to cuda toolkit
 set(USE_CUDA OFF)
 
+# please set /path/to/bsg_bladerunner/
 set(USE_CUDA_LITE OFF)
 
 # Whether enable ROCM runtime
