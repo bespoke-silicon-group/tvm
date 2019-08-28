@@ -46,7 +46,6 @@ def schedule_softmax(outs):
             s = _schedule_injective(op, s)
     else:
         num_thread = 64
-        num_thread = 1
         block_x = tvm.thread_axis("blockIdx.x")
         thread_x = tvm.thread_axis((0, num_thread), "threadIdx.x")
 
