@@ -48,6 +48,7 @@ def sdh_convnet(units,
     flat = relay.nn.batch_flatten(data=pool1)
     fc1 = relay.nn.dense(flat, relay.var("fc1_weight"), units=num_classes)
     net = relay.nn.softmax(data=fc1)
+    net = fc1
 
     args = relay.ir_pass.free_vars(net)
     return relay.Function(args, net)
