@@ -1,3 +1,9 @@
+BSG_BLADERUNNER_ROOT=@BSG_BLADERUNNER_ROOT@
+BSG_MANYCORE_DIR=$(BSG_BLADERUNNER_ROOT)/bsg_manycore
+BSG_F1_DIR=$(BSG_BLADERUNNER_ROOT)/bsg_f1
+
+include $(BSG_F1_DIR)/cl_manycore/Makefile.machine.include
+
 bsg_global_X ?= $(bsg_tiles_X)
 bsg_global_Y ?= $(bsg_tiles_Y)+1
 

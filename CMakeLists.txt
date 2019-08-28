@@ -199,25 +199,25 @@ if(USE_GRAPH_RUNTIME)
   endif(USE_GRAPH_RUNTIME_DEBUG)
 endif(USE_GRAPH_RUNTIME)
 
-if(USE_HBMC OR USE_CUDA_LITE)
-  set(BSG_F1_DIR $ENV{BSG_F1_DIR})
-  message(STATUS "Build with CUDA-Lite support...")
-  list(APPEND COMPILER_SRCS src/codegen/opt/build_cuda_lite_on.cc)
-
-  string(CONCAT HBMC_INCLUDE_DIRS ${BSG_F1_DIR} "/cl_manycore/libraries/")
-  include_directories(${HBMC_INCLUDE_DIRS})
-  file(GLOB RUNTIME_HB_SRCS src/runtime/hbmc/*.cc)
-  list(APPEND RUNTIME_SRCS ${RUNTIME_HB_SRCS})
-
-  # make sure you install the bsg_f1 library
-  #set(HBMC_HBMC_LIBRARY ${BSG_F1_DIR} "/cl_manycore/libraries/libbsg_manycore_runtime.so")
-  string(CONCAT HBMC_HBMC_LIBRARY ${BSG_F1_DIR} "/cl_manycore/libraries/libbsg_manycore_runtime.so")
-  list(APPEND TVM_RUNTIME_LINKER_LIBS ${HBMC_HBMC_LIBRARY})
-endif(USE_HBMC OR USE_CUDA_LITE)
+#if(USE_HBMC OR USE_CUDA_LITE)
+#  set(BSG_F1_DIR $ENV{BSG_F1_DIR})
+#  message(STATUS "Build with CUDA-Lite support...")
+#  list(APPEND COMPILER_SRCS src/codegen/opt/build_cuda_lite_on.cc)
+#
+#  string(CONCAT HBMC_INCLUDE_DIRS ${BSG_F1_DIR} "/cl_manycore/libraries/")
+#  include_directories(${HBMC_INCLUDE_DIRS})
+#  file(GLOB RUNTIME_HB_SRCS src/runtime/hbmc/*.cc)
+#  list(APPEND RUNTIME_SRCS ${RUNTIME_HB_SRCS})
+#
+#  # make sure you install the bsg_f1 library
+#  string(CONCAT HBMC_HBMC_LIBRARY ${BSG_F1_DIR} "/cl_manycore/libraries/libbsg_manycore_runtime.so")
+#  list(APPEND TVM_RUNTIME_LINKER_LIBS ${HBMC_HBMC_LIBRARY})
+#endif(USE_HBMC OR USE_CUDA_LITE)
 
 # Module rules
 include(cmake/modules/VTA.cmake)
 include(cmake/modules/CUDA.cmake)
+include(cmake/modules/CUDA_LITE.cmake)
 include(cmake/modules/OpenCL.cmake)
 include(cmake/modules/OpenGL.cmake)
 include(cmake/modules/Vulkan.cmake)
