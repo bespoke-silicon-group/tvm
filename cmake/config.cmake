@@ -34,6 +34,9 @@ set(USE_CUDA OFF)
 # please set /path/to/bsg_bladerunner/
 set(USE_CUDA_LITE OFF)
 
+# set path to bsg_f1, if you wish to use custom built bsg_f1 library
+# set(BSG_F1_DIR /path/to/bsg_f1)
+
 # Whether enable ROCM runtime
 #
 # Possible values:
