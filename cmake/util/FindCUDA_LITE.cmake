@@ -1,7 +1,7 @@
 macro(find_cuda_lite)
   find_library(BSG_MANYCORE_RUNTIME_LIBRARY bsg_manycore_runtime)
 
-  if(BSG_MANYCORE_RUNTIME_LIBRARY-NOTFOUND)
+  if(NOT BSG_MANYCORE_RUNTIME_LIBRARY)
     if(NOT BSG_F1_DIR)
         message(FATAL_ERROR "Can not find bsg_manycore_runtime library, please set(BSG_F1_DIR /path/to/bsg_f1)")
     elseif(IS_DIRECTORY ${BSG_F1_DIR})
