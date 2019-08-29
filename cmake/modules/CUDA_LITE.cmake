@@ -16,13 +16,6 @@ if(NOT USE_CUDA_LITE STREQUAL "OFF")
       include_directories(${CUDA_LITE_INCLUDE_DIRS})
     endif(CUDA_LITE_FOUND)
 
-    #string(CONCAT BSG_F1_DIR ${BSG_BLADERUNNER_ROOT} "/bsg_f1")
-    #string(CONCAT HBMC_INCLUDE_DIRS ${BSG_F1_DIR} "/cl_manycore/libraries/")
-    #include_directories(${HBMC_INCLUDE_DIRS})
-
-    #find_library(BSG_MANYCORE_RUNTIME_LIBRARY bsg_manycore_runtime)
-    #string(CONCAT HBMC_HBMC_LIBRARY ${BSG_F1_DIR} "/cl_manycore/libraries/libbsg_manycore_runtime.so")
-    #list(APPEND TVM_RUNTIME_LINKER_LIBS ${HBMC_HBMC_LIBRARY})
     list(APPEND TVM_RUNTIME_LINKER_LIBS ${BSG_MANYCORE_RUNTIME_LIBRARY})
   endif()
 endif()
