@@ -37,13 +37,13 @@ git clone -b hammerblade --recursive https://github.com/bespoke-silicon-group/tv
 set(USE_CUDA_LITE /path/to/bsg_bladerunner/root)
 set(USE_LLVM /path/to/llvm-config)
 ```
-* Compile the bgs_f1 library.
+* This code will link bsg_manycore_runtime library from the default linker path (/usr/lib64). If you wish to use to use custom built bsg_manycore_runtime library for the usage such as cosim, please compile the library in the bsg_f1 path, and add the following line to config.cmake.
+```shell
+set(BSG_F1_DIR /path/to/bsg_f1)
+```
 * Add the following lines to your shell configuration file(e.g. ~/.bashrc): 
 ```shell
 export TVM_HOME=/path/to/tvm/
-export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:${PYTHONPATH}"
+export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$TVM_HOME/hb/python:${PYTHONPATH}"
 ```
-## Run
-* Run setup_fpga.sh to get the FPGA ready
-* Enter root mode in order to execute the aws library. (you may need to add the python path for the root user)
-* Execute the scripts in tutorials/cuda_lite with python
+
