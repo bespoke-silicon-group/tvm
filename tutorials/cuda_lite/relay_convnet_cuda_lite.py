@@ -6,7 +6,6 @@ import tvm
 from tvm.contrib import graph_runtime
 from tvm.contrib.download import download_testdata
 from PIL import Image
-#from hb import ir_pass
 import time
 import sys
 
@@ -50,7 +49,6 @@ print(net.astext(show_meta_data=False))
 opt_level = 3
 target = tvm.target.cuda_lite()
 with relay.build_config(opt_level=opt_level):
-    #with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
     with tvm.build_config(add_lower_pass=[(1, print_stmt)]):
         graph, lib, _params = relay.build_module.build(
                 net, target, params=params)

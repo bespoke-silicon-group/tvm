@@ -7,7 +7,6 @@ import tvm
 from tvm.contrib import graph_runtime
 from tvm.contrib.download import download_testdata
 from PIL import Image
-from hb import ir_pass
 import time
 
 dtype="float"
@@ -20,7 +19,6 @@ data_shape = (batch_size,) + image_shape
 out_shape = (batch_size, num_class)
 #out_shape = (batch_size, ) + (1, 4, 4)
 
-#model_path = "/home/centos/sdh/convnet/conv.onnx"
 model_path = "./conv.onnx"
 onnx_model = onnx.load(model_path)
 
@@ -31,7 +29,6 @@ mod, params = relay.frontend.from_onnx(onnx_model, shape_dict)
 print(mod.astext(show_meta_data=False))
 #exit()
 
-#data = np.random.uniform(-1, 1, size=(1, 3, 8, 8)).astype("float32")
 img_url = 'https://github.com/dmlc/mxnet.js/blob/master/data/cat.png?raw=true'
 img_path = download_testdata(img_url, 'cat.png', module='data')
 img = Image.open(img_path).resize((8, 8))

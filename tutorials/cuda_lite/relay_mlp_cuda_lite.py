@@ -4,7 +4,6 @@ from tvm import relay
 from tvm.relay import testing
 import tvm
 from tvm.contrib import graph_runtime
-from hb import ir_pass
 
 dtype="float32"
 batch_size = 1
@@ -23,12 +22,10 @@ net, params = relay.testing.mlp.get_workload(
 # set show_meta_data=True if you want to show meta data
 print(net.astext(show_meta_data=False))
 
-#opt_level = 3
+opt_level = 3
 target = tvm.target.cuda_lite()
-#target = "llvm"
-#with relay.build_config(opt_level=opt_level):
-with relay.build_config():
-    with tvm.build_config(add_lower_pass=[(1, ir_pass.inject_thread_loop)]):
+with relay.build_config(opt_level=opt_level):
+    with relay.build_config():
         graph, lib, params = relay.build_module.build(
             net, target, params=params)
 #exit()

@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function
 import tvm
 import numpy as np
 #from ir_pass import inject_thread_loop
-from hb import ir_pass
+import ir_pass
 
 # Global declarations of environment.
 dtype = 'int32'
