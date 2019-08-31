@@ -46,4 +46,12 @@ set(BSG_F1_DIR /path/to/bsg_f1)
 export TVM_HOME=/path/to/tvm/
 export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$TVM_HOME/hb/python:${PYTHONPATH}"
 ```
-
+## Tutorials
+1. vec_add_cuda_lite.py
+> Doing vector addition with cuda_lite, a good starting point to learn TVM dsl.
+2. dot_product_cuda_lite.py
+> Example code to do dot product, use more TVM dsl features.
+3. gemm_cuda_lite.py
+> General matrix multiplication is an important kernel for many other workloads(e.g. Convolutional Neural Network). This code use an easy to understand TVM scheduling that can run on manycore.
+4. gemm_cuda_lite_ir_pass.py
+> This code is based on the gemm_cuda_lite.py but apply an ir pass to detect and insert thread loop. So we can define workload with size larger than the underline hardware core.
