@@ -58,4 +58,4 @@ setup_fpga.sh will initialize the FPGA with AGFI ID.
 4. gemm_cuda_lite_ir_pass.py
 > This code is based on the gemm_cuda_lite.py but apply an ir pass to detect and insert thread loop. So we can define workload with size larger than the underline hardware core.
 5. relay_xxxx_cuda_lite.py
-There are the scripts testing the workloads defined in relay. The workloads are implemented in https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/python/tvm/relay/testing.
+> There are the scripts testing the workloads defined in relay. The workloads are implemented in https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/python/tvm/relay/testing.
