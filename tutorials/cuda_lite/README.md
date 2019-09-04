@@ -11,7 +11,7 @@
 ### Install BSG Bladerunner F1 instance
 * Setup the BSG Bladerunner toolchain by cloning the [bsg_bladerunner](https://github.com/bespoke-silicon-group/bsg_bladerunner/tree/master) repo or lunch a bsg_bladerunner F1 instance.
 * Compile the bsg_f1 cl_manycore library
-* We current support v3.2.1
+* We currently support v3.2.1
 
 ### If you're using F1, install SCL devtools and python
 * Install SCL [Developer Toolset 7](https://www.softwarecollections.org/en/scls/rhscl/devtoolset-7/)
@@ -47,6 +47,8 @@ export TVM_HOME=/path/to/tvm/
 export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$TVM_HOME/hb/python:${PYTHONPATH}"
 ```
 ## Tutorials
+If you're using AWS F1, please run setup_fpga.sh before running each tutorial script. 
+setup_fpga.sh will initialize the FPGA with AGFI ID.
 1. vec_add_cuda_lite.py
 > Doing vector addition with cuda_lite, a good starting point to learn TVM dsl.
 2. dot_product_cuda_lite.py
@@ -55,3 +57,5 @@ export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$
 > General matrix multiplication is an important kernel for many other workloads(e.g. Convolutional Neural Network). This code use an easy to understand TVM scheduling that can run on manycore.
 4. gemm_cuda_lite_ir_pass.py
 > This code is based on the gemm_cuda_lite.py but apply an ir pass to detect and insert thread loop. So we can define workload with size larger than the underline hardware core.
+5. relay_xxxx_cuda_lite.py
+There are the scripts testing the workloads defined in relay. The workloads are implemented in https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/python/tvm/relay/testing.
