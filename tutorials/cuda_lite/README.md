@@ -59,7 +59,7 @@ setup_fpga.sh will initialize the FPGA with AGFI ID.
 4. gemm_cuda_lite_ir_pass.py
 > This code is based on the gemm_cuda_lite.py but apply an ir pass to detect and insert thread loop. So we can define workload with size larger than the underline hardware core.
 5. relay_xxxx_cuda_lite.py
-> These are the scripts testing the workloads defined in relay. The workloads are implemented in https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/python/tvm/relay/testing.
+> These are the scripts testing the workloads defined in relay. The workloads are implemented in [here](https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/python/tvm/relay/testing).
 
 ## Developer Guide
 The TVM [Tutorials](https://docs.tvm.ai/tutorials/index.html) and the TVM [Design and Developer Guide](https://docs.tvm.ai/dev/index.html) are the good starting points to understand TVM usage and basic ideas of the code base.
@@ -82,6 +82,13 @@ The kernel launch in python will call back to the operator overloading functin o
 ### Codegen for HammerBlade (CUDA-Lite)
 TVM codegen is a recursive process, it will call VisitStmt_() again and again with function overloading to traverse the IR syntax tree and print out the code for each node in the tree.
 The CUDA-Lite code generation is similar to the CUDA code generation, and are implemented in the [codegen_cuda_lite.cc](https://github.com/bespoke-silicon-group/tvm/blob/hammerblade/src/codegen/codegen_cuda_lite.cc).
-The recursive codegen process starts from [CodeGenCUDALite::VisitStmt_(const ir::AttrStmt* op)](https://github.com/bespoke-silicon-group/tvm/blob/1fee5a129a7f9d31fa34d1f6af1df9e7e1a40ebd/src/codegen/codegen_cuda_lite.cc#L79).
+The recursive codegen process starts from this [function](https://github.com/bespoke-silicon-group/tvm/blob/1fee5a129a7f9d31fa34d1f6af1df9e7e1a40ebd/src/codegen/codegen_cuda_lite.cc#L79).
 
-### Topi Operators for HammerBlade
+### TOPI Operators for HammerBlade
+TVM Operator Inventory (TOPI) is the TVM implementation and scheduling for the often-use operators in deep learning.
+You can find the introduction of TOPI at [here](https://docs.tvm.ai/tutorials/topi/intro_topi.html#sphx-glr-tutorials-topi-intro-topi-py).
+For the HammerBlade, we can reuse the implemented operators, but we need to write new schedulings to map the computation correctly to the ManyCore hardware.
+The redefined CUDA-Lite schedulings are implemented in the [topi/python/topi/cuda](https://github.com/bespoke-silicon-group/tvm/tree/1fee5a129a7f9d31fa34d1f6af1df9e7e1a40ebd/topi/python/topi/cuda) directory, since CUDA-Lite scheduling is generally similar to original CUDA scheduling.
+
+To learn more about the TVM scheduling and optimization, please refer to the guides [here](https://docs.tvm.ai/tutorials/index.html#tensor-expression-and-schedules) and [here](https://docs.tvm.ai/tutorials/index.html#optimize-tensor-operators).
+If you want to generate more optimized code for HammerBlade, the TOPI scheduling is the place you want to modify.
