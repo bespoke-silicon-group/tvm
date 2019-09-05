@@ -46,6 +46,7 @@ set(BSG_F1_DIR /path/to/bsg_f1)
 export TVM_HOME=/path/to/tvm/
 export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$TVM_HOME/hb/python:${PYTHONPATH}"
 ```
+
 ## Tutorials
 If you're using AWS F1, please run setup_fpga.sh before running each tutorial script. 
 setup_fpga.sh will initialize the FPGA with AGFI ID.
@@ -58,4 +59,18 @@ setup_fpga.sh will initialize the FPGA with AGFI ID.
 4. gemm_cuda_lite_ir_pass.py
 > This code is based on the gemm_cuda_lite.py but apply an ir pass to detect and insert thread loop. So we can define workload with size larger than the underline hardware core.
 5. relay_xxxx_cuda_lite.py
-> There are the scripts testing the workloads defined in relay. The workloads are implemented in https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/python/tvm/relay/testing.
+> These are the scripts testing the workloads defined in relay. The workloads are implemented in https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/python/tvm/relay/testing.
+
+## Developer Guide
+The TVM [Tutorials](https://docs.tvm.ai/tutorials/index.html) and the TVM [Design and Developer Guide](https://docs.tvm.ai/dev/index.html) are the good starting points to understand TVM usage and basic ideas of the code base.
+Among these, https://docs.tvm.ai/dev/codebase_walkthrough.html and https://docs.tvm.ai/dev/runtime.html are the must read guides to understand TVM code structures quickly.
+
+The developments for HammerBlade are mainly focus in three parts, runtime system, codegen and Topi operators support for HammerBlade. We will give detailed descriptions in the following sections.
+
+### Runtime System for HammerBlade
+The runtime system codebase for HammerBlade is in https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/src/runtime/hbmc.
+The runtime system relies on the [bsg_f1](https://github.com/bespoke-silicon-group/bsg_f1) library and calls into the bsg_f1 library functions.
+
+### Codegen for HammerBlade
+
+### Topi Operators for HammerBlade
