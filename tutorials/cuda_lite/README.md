@@ -68,9 +68,20 @@ Among these, https://docs.tvm.ai/dev/codebase_walkthrough.html and https://docs.
 The developments for HammerBlade are mainly focus in three parts, runtime system, codegen and Topi operators support for HammerBlade. We will give detailed descriptions in the following sections.
 
 ### Runtime System for HammerBlade
-The runtime system codebase for HammerBlade is in https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/src/runtime/hbmc.
+The runtime system serves as the host code in the CUDA programming model.
+With the help of the runtime system, TVM doesn't need to generate host code and can manage the device through the python interface.
+The runtime system codebase for HammerBlade is in [here](https://github.com/bespoke-silicon-group/tvm/tree/hammerblade/src/runtime/hbmc).
 The runtime system relies on the [bsg_f1](https://github.com/bespoke-silicon-group/bsg_f1) library and calls into the bsg_f1 library functions.
 
-### Codegen for HammerBlade
+For the data allocation and data copy interface, please check [hbmc_device_api.cc](https://github.com/bespoke-silicon-group/tvm/blob/hammerblade/src/runtime/hbmc/hbmc_device_api.cc).
+We follow the TVM defined device api and fullfill that with bsg_f1 library.
+
+For kernel launch and passing arguments to the kernel, please check [hbmc_module.cc](https://github.com/bespoke-silicon-group/tvm/blob/hammerblade/src/runtime/hbmc/hbmc_module.cc).
+The kernel launch in python will call back to the operator overloading functin of () at [here](https://github.com/bespoke-silicon-group/tvm/blob/1fee5a129a7f9d31fa34d1f6af1df9e7e1a40ebd/src/runtime/hbmc/hbmc_module.cc#L183).
+
+### Codegen for HammerBlade (CUDA-Lite)
+TVM codegen is a recursive process, it will call VisitStmt_() again and again with function overloading to traverse the IR syntax tree and print out the code for each node in the tree.
+The CUDA-Lite code generation is similar to the CUDA code generation, and are implemented in the [codegen_cuda_lite.cc](https://github.com/bespoke-silicon-group/tvm/blob/hammerblade/src/codegen/codegen_cuda_lite.cc).
+The recursive codegen process starts from [CodeGenCUDALite::VisitStmt_(const ir::AttrStmt* op)](https://github.com/bespoke-silicon-group/tvm/blob/1fee5a129a7f9d31fa34d1f6af1df9e7e1a40ebd/src/codegen/codegen_cuda_lite.cc#L79).
 
 ### Topi Operators for HammerBlade
