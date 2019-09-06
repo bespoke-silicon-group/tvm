@@ -88,7 +88,7 @@ The recursive codegen process starts from this [function](https://github.com/bes
 TVM Operator Inventory (TOPI) is the TVM implementation and scheduling for the often-use operators in deep learning.
 You can find the introduction of TOPI at [here](https://docs.tvm.ai/tutorials/topi/intro_topi.html#sphx-glr-tutorials-topi-intro-topi-py).
 For the HammerBlade, we can reuse the implemented operators, but we need to write new schedulings to map the computation correctly to the ManyCore hardware.
-The redefined CUDA-Lite schedulings are implemented in the [topi/python/topi/cuda](https://github.com/bespoke-silicon-group/tvm/tree/1fee5a129a7f9d31fa34d1f6af1df9e7e1a40ebd/topi/python/topi/cuda) directory, since CUDA-Lite scheduling is generally similar to original CUDA scheduling.
+The redefined CUDA-Lite schedulings are implemented in the [topi/python/topi/cuda](https://github.com/bespoke-silicon-group/tvm/tree/1fee5a129a7f9d31fa34d1f6af1df9e7e1a40ebd/topi/python/topi/cuda) directory with other implementations of CUDA, since CUDA-Lite scheduling is generally similar to original CUDA scheduling.
 
 To learn more about the TVM scheduling and optimization, please refer to the guides [here](https://docs.tvm.ai/tutorials/index.html#tensor-expression-and-schedules) and [here](https://docs.tvm.ai/tutorials/index.html#optimize-tensor-operators).
 If you want to generate more optimized code for HammerBlade, the TOPI scheduling is the place you want to modify.
