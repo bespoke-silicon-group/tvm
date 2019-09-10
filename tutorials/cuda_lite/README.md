@@ -1,4 +1,4 @@
-# Usage Guide for Running CUDA Lite Examples on HammerBlade
+# Guides of TVM Support on CUDA-Lite/HammerBlade
 - Currently support running on AWS F1 and BSG XOR server.
 
 ## Installation
